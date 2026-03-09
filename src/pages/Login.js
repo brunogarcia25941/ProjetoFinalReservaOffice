@@ -1,12 +1,25 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext } from 'react';
+import { AuthContext } from '../context/AuthContext';
 
 function Login() {
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  
+  // Estados para guardar o que o utilizador escreve e possíveis erros
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [erro, setErro] = useState('');
 
-  const fazerLogin = (e) => {
+  const fazerLogin = async (e) => {
     e.preventDefault();
-    navigate('/dashboard');
+    setErro('');
+    try {
+      await login(email, password); // Chama a função do Context
+      navigate('/dashboard');       // Se der sucesso, vai para o dashboard
+    } catch (error) {
+      setErro('Email ou palavra-passe incorretos.'); // Se der erro (401), mostra mensagem
+    }
   };
 
   return (
@@ -22,22 +35,23 @@ function Login() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
           </div>
-          <h2 className="text-2xl font-semibold text-gray-800">Welcome to Reserva Office</h2>
-          <p className="text-gray-500 text-sm mt-1">Sign in to book your workspace</p>
+          <h2 className="text-2xl font-semibold text-gray-800">Bem vindo à Reserva Office</h2>
+          <p className="text-gray-500 text-sm mt-1">Faz Login para reservar a tua área de trabalho</p>
         </div>
 
         {/* Formulário */}
         <form onSubmit={fazerLogin} className="space-y-5">
+          {erro && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{erro}</div>}
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Email</label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <svg className="h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
               </div>
-              <input type="email" required className="block w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Ex: colaborador@softinsa.pt" />
+              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="block w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Ex: colaborador@softinsa.pt" />
             </div>
           </div>
 
@@ -50,7 +64,7 @@ function Login() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <input type="password" required className="block w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="••••••••" />
+              <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required className="block w-full pl-10 px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="••••••••" />
             </div>
           </div>
 
@@ -58,10 +72,10 @@ function Login() {
           <div className="flex items-center justify-between">
             <div className="flex items-center">
               <input id="remember-me" type="checkbox" className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">Remember me</label>
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">Lembrar-me</label>
             </div>
             <div className="text-sm">
-              <a href="#/" className="font-medium text-blue-600 hover:text-blue-500">Forgot password?</a>
+              <a href="#/" className="font-medium text-blue-600 hover:text-blue-500">Esqueceu a palavra-passe?</a>
             </div>
           </div>
 

@@ -1,19 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 
 function Dashboard() {
   const [recursos, setRecursos] = useState([]);
   const [erro, setErro] = useState(null);
+  
+  const { logout, token } = useContext(AuthContext); // Trazer o token e o logout
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   useEffect(() => {
     // Vai buscar os dados ao backend
-    axios.get('http://localhost:5000/api/resources')
+    axios.get('http://localhost:5000/api/resources', {
+      headers: { Authorization: `Bearer ${token}` } // Injecta o Token de segurança
+    })
       .then((response) => setRecursos(response.data))
       .catch((error) => {
         console.error("Erro na API:", error);
         setErro("Não foi possível carregar os recursos.");
       });
   }, []);
+
+  const reservarRecurso = async (id, nome) => {
+      if (!window.confirm(`Queres mesmo reservar o recurso: ${nome}?`)) return;
+
+      try {
+        // Criar as datas no formato que o backend espera (YYYY-MM-DD HH:MM:SS)
+        const hoje = new Date().toISOString().split('T')[0];
+        const startTime = `${hoje} 09:00:00`;
+        const endTime = `${hoje} 18:00:00`;
+
+        // Enviar os dados
+        await axios.post('http://localhost:5000/api/bookings', {
+          resource_id: id,
+          start_time: startTime,
+          end_time: endTime
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        alert('Reserva efetuada com sucesso!');
+        window.location.reload(); 
+
+      } catch (error) {
+        console.error("Erro ao reservar:", error);
+        alert(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+      }
+    };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -37,6 +76,9 @@ function Dashboard() {
             </div>
             <span>Bernardo Alves</span>
           </div>
+          <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-800 ml-4 font-medium">
+            Sair
+          </button>
         </div>
       </nav>
 
@@ -89,9 +131,10 @@ function Dashboard() {
               return (
                 <div 
                   key={recurso.id} 
-                  className={`relative p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col items-center text-center
+                  onClick={() => isAvailable ? reservarRecurso(recurso.id, recurso.name) : alert('Este recurso não está disponível de momento.')}
+                  className={`relative p-4 rounded-xl border-2 transition-all flex flex-col items-center text-center
                     ${isAvailable 
-                      ? 'bg-green-50/50 border-green-200 hover:border-green-400 hover:shadow-md' 
+                      ? 'bg-green-50/50 border-green-200 hover:border-green-400 hover:shadow-md cursor-pointer' 
                       : 'bg-red-50/50 border-red-200 opacity-70 cursor-not-allowed'
                     }`}
                 >
