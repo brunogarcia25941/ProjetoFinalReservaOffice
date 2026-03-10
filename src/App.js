@@ -1,41 +1,48 @@
-// ficheiro: frontend/src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, AuthContext } from './context/AuthContext';
-import { useContext } from 'react';
+import { AuthProvider } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import MyBookings from './pages/MyBookings';
 
-function RotaProtegida({ children }) {
-  const { token } = useContext(AuthContext);
-  // Se não houver token, recambia o utilizador para o login
-  if (!token) return <Navigate to="/login" />;
-  return children;
-}
+// Componente "Guardião" (PrivateRoute)
+// Bloqueia o acesso a rotas sensíveis. Se não houver token no browser, 
+// expulsa o utilizador e reencaminha-o para o ecrã de Login ("/").
+const PrivateRoute = ({ children }) => {
+    const token = localStorage.getItem('token');
+    return token ? children : <Navigate to="/" />;
+};
 
 function App() {
-  return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          {/* Dashboard envolvido pela RotaProtegida */}
-          <Route path="/dashboard" element={
-            <RotaProtegida>
-              <Dashboard />
-            </RotaProtegida>
-          } />
-          <Route path="/minhas-reservas" element={
-            <RotaProtegida>
-              <MyBookings />
-            </RotaProtegida>
-          } />
-          <Route path="*" element={<Navigate to="/login" />} />
-        </Routes>
-      </Router>
-    </AuthProvider>
-  );
+    return (
+        // Envolvemos toda a aplicação no AuthProvider para que a sessão exista globalmente
+        <AuthProvider>
+            <Router>
+                <Routes>
+                    {/* ROTA PÚBLICA: Qualquer pessoa pode ver o Login */}
+                    <Route path="/" element={<Login />} />
+
+                    {/* ROTAS PRIVADAS: Protegidas pelo nosso Guardião (PrivateRoute) */}
+                    <Route 
+                        path="/dashboard" 
+                        element={
+                            <PrivateRoute>
+                                <Dashboard />
+                            </PrivateRoute>
+                        } 
+                    />
+                    <Route 
+                        path="/my-bookings" 
+                        element={
+                            <PrivateRoute>
+                                <MyBookings />
+                            </PrivateRoute>
+                        } 
+                    />
+                </Routes>
+            </Router>
+        </AuthProvider>
+    );
 }
 
 export default App;
