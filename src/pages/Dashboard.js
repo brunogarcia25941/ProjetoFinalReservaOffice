@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function Dashboard() {
@@ -67,8 +67,8 @@ function Dashboard() {
           <span className="text-xl font-bold text-gray-800">Reserva Office</span>
         </div>
         <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-          <a href="#/" className="text-blue-600 border-b-2 border-blue-600 pb-1">Reservar uma secretária</a>
-          <a href="#/" className="hover:text-blue-600 transition-colors">Minhas Reservas</a>
+          <span className="text-blue-600 border-b-2 border-blue-600 pb-1">Reservar Mesa</span>
+          <Link to="/minhas-reservas" className="hover:text-blue-600 transition-colors">As Minhas Reservas</Link>
           <div className="w-px h-5 bg-gray-300 mx-2"></div>
           <div className="flex items-center gap-2 cursor-pointer">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">
