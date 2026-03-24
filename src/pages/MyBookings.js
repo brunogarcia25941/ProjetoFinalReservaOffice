@@ -1,18 +1,22 @@
-// ficheiro: src/pages/MyBookings.js
 import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function MyBookings() {
+  // --- ESTADOS DO COMPONENTE ---
+  // 'reservas' guarda a lista de marcações que vêm da Base de Dados para este utilizador
   const [reservas, setReservas] = useState([]);
   const [erro, setErro] = useState(null);
-  const { token, logout } = useContext(AuthContext);
+  
+  // Extraímos os dados de sessão (token para a API e função de logout)
+  const { logout, token, user } = useContext(AuthContext); 
   const navigate = useNavigate();
 
+  // Função para terminar a sessão
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const carregarReservas = async () => {
@@ -28,20 +32,29 @@ function MyBookings() {
   };
 
   useEffect(() => {
-    carregarReservas();
-  }, []);
+    // Pedido GET ao Backend para listar as reservas
+    axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
+      headers: { Authorization: `Bearer ${token}` } // O Token garante que o backend só devolve as reservas Deste utilizador
+    })
+      .then((response) => setReservas(response.data)) // Atualiza o estado com os dados da API
+      .catch((error) => {
+        console.error("Erro na API:", error);
+        setErro("Não foi possível carregar as tuas reservas.");
+      });
+  }, [token]);
 
+  // --- FUNÇÃO DE CANCELAMENTO ---
   const cancelarReserva = async (id) => {
-    if (!window.confirm('Tens a certeza que queres cancelar esta reserva?')) return;
+    // Pede confirmação ao utilizador para evitar cliques acidentais
+    if (!window.confirm('Queres mesmo cancelar esta reserva?')) return;
 
     try {
       await axios.put(`https://projetofinalreservaoffice-backend.onrender.com/api/bookings/${id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Reserva cancelada com sucesso!');
-      carregarReservas(); // Recarrega a lista para atualizar o estado
     } catch (error) {
-      alert(error.response?.data?.message || 'Erro ao cancelar a reserva.');
+      alert('Erro ao tentar cancelar a reserva. Tenta novamente.');
     }
   };
 

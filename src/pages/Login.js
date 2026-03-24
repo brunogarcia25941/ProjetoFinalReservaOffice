@@ -3,22 +3,31 @@ import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 
 function Login() {
+  // useNavigate: Permite redirecionar o utilizador para outras páginas via código
   const navigate = useNavigate();
+  
+  // Extraímos a função 'login' do nosso contexto global de autenticação
   const { login } = useContext(AuthContext);
   
-  // Estados para guardar o que o utilizador escreve e possíveis erros
+  // --- ESTADOS DO COMPONENTE ---
+  // Guardam o que o utilizador escreve nos inputs em tempo real
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [erro, setErro] = useState('');
 
+  // --- FUNÇÃO DE SUBMISSÃO ---
   const fazerLogin = async (e) => {
-    e.preventDefault();
-    setErro('');
+    e.preventDefault(); // Impede que a página faça "refresh" ao submeter o formulário
+    setErro(''); // Limpa erros de tentativas anteriores
+
     try {
-      await login(email, password); // Chama a função do Context
-      navigate('/dashboard');       // Se der sucesso, vai para o dashboard
+      // Chama a função do Context (que por sua vez comunica com o Backend)
+      await login(email, password); 
+      // Se a promessa for resolvida com sucesso, reencaminha para o painel principal
+      navigate('/dashboard');       
     } catch (error) {
-      setErro('Email ou palavra-passe incorretos.'); // Se der erro (401), mostra mensagem
+      // Se falhar (ex: credenciais erradas), mostra a mensagem de erro na interface
+      setErro('Email ou palavra-passe incorretos.'); 
     }
   };
 

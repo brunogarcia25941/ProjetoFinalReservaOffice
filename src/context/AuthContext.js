@@ -1,9 +1,9 @@
-import React, { createContext, useState } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useEffect } from 'react';
 
 // Diz ao Axios para aceitar e enviar cookies de segurança do Backend
 axios.defaults.withCredentials = true;
 
+// 1. Criamos o contexto. Isto vai atuar como um "estado global" para os dados do utilizador.
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -33,9 +33,10 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
   };
 
-  return (
-    <AuthContext.Provider value={{ token, login, logout }}>
-      {children}
-    </AuthContext.Provider>
-  );
-}
+    // Fornecemos os dados e as funções a qualquer componente "filho" que esteja dentro do Provider
+    return (
+        <AuthContext.Provider value={{ user, login, logout }}>
+            {children}
+        </AuthContext.Provider>
+    );
+};

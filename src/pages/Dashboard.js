@@ -4,34 +4,42 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function Dashboard() {
+  // --- ESTADOS ---
+  // 'recursos' guarda a lista de mesas/salas vindas da Base de Dados
   const [recursos, setRecursos] = useState([]);
   const [erro, setErro] = useState(null);
   
-  const { logout, token } = useContext(AuthContext); // Trazer o token e o logout
+  // Extraímos o token de segurança e a função de logout do contexto global
+  const { logout, token } = useContext(AuthContext); 
   const navigate = useNavigate();
 
+  // Função para terminar a sessão e voltar ao ecrã inicial
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
+  // --- BUSCAR DADOS AO ARRANCAR (useEffect) ---
+  // Executa automaticamente quando a página Dashboard é carregada
   useEffect(() => {
     // Vai buscar os dados ao backend
     axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/resources', {
       headers: { Authorization: `Bearer ${token}` } // Injecta o Token de segurança
     })
-      .then((response) => setRecursos(response.data))
+      .then((response) => setRecursos(response.data)) // Guarda os dados no estado
       .catch((error) => {
         console.error("Erro na API:", error);
-        setErro("Não foi possível carregar os recursos.");
+        setErro("Não foi possível carregar as mesas disponíveis.");
       });
-  }, []);
+  }, [token]);
 
+  // --- FUNÇÃO DE RESERVA ---
   const reservarRecurso = async (id, nome) => {
+      // Pede confirmação ao utilizador antes de avançar
       if (!window.confirm(`Queres mesmo reservar o recurso: ${nome}?`)) return;
 
       try {
-        // Criar as datas no formato que o backend espera (YYYY-MM-DD HH:MM:SS)
+        // Criar as datas no formato exigido pelo MySQL (YYYY-MM-DD HH:MM:SS)
         const hoje = new Date().toISOString().split('T')[0];
         const startTime = `${hoje} 09:00:00`;
         const endTime = `${hoje} 18:00:00`;
@@ -42,14 +50,15 @@ function Dashboard() {
           start_time: startTime,
           end_time: endTime
         }, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}` } // Token obrigatório para criar dados
         });
 
         alert('Reserva efetuada com sucesso!');
-        window.location.reload(); 
+        window.location.reload(); // Recarrega a página para atualizar o estado da mesa
 
       } catch (error) {
         console.error("Erro ao reservar:", error);
+        // Mostra a mensagem de erro que vem do backend (ex: "Recurso já reservado")
         alert(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
       }
     };
