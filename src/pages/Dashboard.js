@@ -17,7 +17,7 @@ function Dashboard() {
 
   useEffect(() => {
     // Vai buscar os dados ao backend
-    axios.get('http://localhost:5000/api/resources', {
+    axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/resources', {
       headers: { Authorization: `Bearer ${token}` } // Injecta o Token de segurança
     })
       .then((response) => setRecursos(response.data))
@@ -37,7 +37,7 @@ function Dashboard() {
         const endTime = `${hoje} 18:00:00`;
 
         // Enviar os dados
-        await axios.post('http://localhost:5000/api/bookings', {
+        await axios.post('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
           resource_id: id,
           start_time: startTime,
           end_time: endTime

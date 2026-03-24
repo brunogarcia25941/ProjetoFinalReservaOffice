@@ -6,6 +6,7 @@ import { useContext } from 'react';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import MyBookings from './pages/MyBookings';
+import AdminDashboard from './pages/AdminDashboard';
 
 function RotaProtegida({ children }) {
   const { token } = useContext(AuthContext);
@@ -29,6 +30,11 @@ function App() {
           <Route path="/minhas-reservas" element={
             <RotaProtegida>
               <MyBookings />
+            </RotaProtegida>
+          } />
+          <Route path="/admin" element={
+            <RotaProtegida>
+              <AdminDashboard />
             </RotaProtegida>
           } />
           <Route path="*" element={<Navigate to="/login" />} />

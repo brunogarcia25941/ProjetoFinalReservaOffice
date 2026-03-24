@@ -17,7 +17,7 @@ function MyBookings() {
 
   const carregarReservas = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/bookings', {
+      const response = await axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReservas(response.data);
@@ -35,7 +35,7 @@ function MyBookings() {
     if (!window.confirm('Tens a certeza que queres cancelar esta reserva?')) return;
 
     try {
-      await axios.put(`http://localhost:5000/api/bookings/${id}/cancel`, {}, {
+      await axios.put(`https://projetofinalreservaoffice-backend.onrender.com/api/bookings/${id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Reserva cancelada com sucesso!');
