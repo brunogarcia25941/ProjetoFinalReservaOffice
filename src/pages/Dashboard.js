@@ -10,8 +10,18 @@ function Dashboard() {
   const [erro, setErro] = useState(null);
   
   // Extraímos o token de segurança e a função de logout do contexto global
-  const { logout, token } = useContext(AuthContext); 
+  const { logout, token, user } = useContext(AuthContext); 
   const navigate = useNavigate();
+
+  // Função para ir buscar as iniciais (Ex: "Bernardo Alves" -> "BA")
+  const getIniciais = (nome) => {
+    if (!nome) return 'U';
+    const partes = nome.trim().split(' ');
+    if (partes.length >= 2) {
+      return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
+    }
+    return partes[0][0].toUpperCase();
+  };
 
   // Função para terminar a sessão e voltar ao ecrã inicial
   const handleLogout = () => {
@@ -79,11 +89,18 @@ function Dashboard() {
           <span className="text-blue-600 border-b-2 border-blue-600 pb-1">Reservar Mesa</span>
           <Link to="/minhas-reservas" className="hover:text-blue-600 transition-colors">As Minhas Reservas</Link>
           <div className="w-px h-5 bg-gray-300 mx-2"></div>
-          <div className="flex items-center gap-2 cursor-pointer">
+          <div className="flex items-center gap-2 ">
             <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold">
-              BA
+              {getIniciais(user?.name)}
             </div>
-            <span>Bernardo Alves</span>
+            <span className="font-medium">{user?.name || 'Utilizador'}</span>
+            
+            {/* Se for Admin, mostra a tag vermelha clicável */}
+            {user?.role === 'admin' && (
+              <Link to="/admin" title="Ir para Administração" className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors cursor-pointer">
+                Admin
+              </Link>
+            )}
           </div>
           <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-800 ml-4 font-medium">
             Sair
