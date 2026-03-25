@@ -62,7 +62,14 @@ function MyBookings() {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Reserva cancelada com sucesso!');
+      // atualizar essa linha sem precisar de dar reload à pagina
+      setReservas(reservasAnteriores => 
+        reservasAnteriores.map(reserva => 
+          reserva.booking_id === id ? { ...reserva, status: 'cancelled' } : reserva
+        )
+      );
     } catch (error) {
+      console.error("Erro Detalhado:", error.response || error);
       alert('Erro ao tentar cancelar a reserva. Tenta novamente.');
     }
   };
