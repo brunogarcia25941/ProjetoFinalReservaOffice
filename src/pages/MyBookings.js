@@ -28,17 +28,6 @@ function MyBookings() {
     navigate('/');
   };
 
-  const carregarReservas = async () => {
-    try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setReservas(response.data);
-    } catch (error) {
-      console.error("Erro na API:", error);
-      setErro("Não foi possível carregar as tuas reservas.");
-    }
-  };
 
   useEffect(() => {
     // Pedido GET ao Backend para listar as reservas

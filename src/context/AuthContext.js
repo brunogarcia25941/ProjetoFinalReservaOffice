@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState} from 'react';
 import axios from 'axios';
 
 // Diz ao Axios para aceitar e enviar cookies de segurança do Backend
