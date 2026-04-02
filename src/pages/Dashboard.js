@@ -60,7 +60,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/resources/availability', {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/resources/availability', {
         headers: { Authorization: `Bearer ${token}` },
         params: { start: startTimeFormatado, end: endTimeFormatado }
       });
@@ -103,7 +103,7 @@ function Dashboard() {
       try {
 
         // Enviar os dados
-        await axios.post('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
+        await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
           resource_id: id,
           start_time: startTimeFormatado,
           end_time: endTimeFormatado

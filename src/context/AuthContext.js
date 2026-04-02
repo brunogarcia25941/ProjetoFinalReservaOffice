@@ -4,6 +4,10 @@ import axios from 'axios';
 // Diz ao Axios para aceitar e enviar cookies de segurança do Backend
 axios.defaults.withCredentials = true;
 
+// --- CONFIGURAÇÃO CENTRALIZADA DO URL ---
+// Substituímos o Render pelo teu novo domínio da Vercel
+const BASE_URL = 'https://projeto-final-reserva-office-backen.vercel.app/api/auth';
+
 // 1. Criamos o contexto. Isto vai atuar como um "estado global" para os dados do utilizador.
 export const AuthContext = createContext();
 
@@ -17,38 +21,51 @@ export function AuthProvider({ children }) {
     return savedUser ? JSON.parse(savedUser) : null;
   });
 
+  // Função de Login
   const login = async (email, password) => {
-    // Faz o pedido ao backend
-    const response = await axios.post('https://projetofinalreservaoffice-backend.onrender.com/api/auth/login', { email, password });
-    
-    // Se tiver sucesso, guarda o token no estado e no LocalStorage (para não perder o login ao fazer F5)
-    const newToken = response.data.accessToken;
-    const userData = response.data.user; // backend devolve o utilizador 
-    setToken(newToken);
-    setUser(userData); // guarda os dados do utilizador no estado
-    localStorage.setItem('token', newToken);
-    localStorage.setItem('user', JSON.stringify(userData)); // guarda os dados do utilizador no localStorage
-    return true;
+    try {
+      // Faz o pedido ao NOVO backend na Vercel usando a constante BASE_URL
+      const response = await axios.post(`${BASE_URL}/login`, { email, password });
+      
+      // Se tiver sucesso, extrai os dados
+      const newToken = response.data.accessToken;
+      const userData = response.data.user; 
+      
+      // Atualiza o estado global
+      setToken(newToken);
+      setUser(userData); 
+      
+      // Guarda no LocalStorage para persistir o login se a página for atualizada
+      localStorage.setItem('token', newToken);
+      localStorage.setItem('user', JSON.stringify(userData)); 
+      
+      return true;
+    } catch (error) {
+      console.error("Erro ao fazer login:", error.response?.data?.message || error.message);
+      throw error; // Lança o erro para o componente Login.js o poder mostrar
+    }
   };
 
+  // Função de Logout
   const logout = async () => {
-    // avisar o backend para destruir o cookie
     try {
-      await axios.post('https://projetofinalreservaoffice-backend.onrender.com/api/auth/logout');
+      // Avisa o servidor para limpar a sessão/cookies
+      await axios.post(`${BASE_URL}/logout`);
     } catch (err) {
-      console.log("Erro ao fazer logout no servidor", err);
+      console.log("Erro ao fazer logout no servidor (limpeza local efetuada)", err);
     }
     
+    // Limpa tudo localmente, independentemente de o servidor responder ou não
     setToken(null);
-    setUser(null); // limpa os dados do utilizador do estado
+    setUser(null); 
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); // remove os dados do utilizador do localStorage
+    localStorage.removeItem('user'); 
   };
 
-    // Fornecemos os dados e as funções a qualquer componente "filho" que esteja dentro do Provider
-    return (
-        <AuthContext.Provider value={{ token, user, login, logout }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  // Fornecemos os dados e as funções a qualquer componente "filho" (App.js, Dashboard, etc.)
+  return (
+    <AuthContext.Provider value={{ token, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };

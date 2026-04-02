@@ -25,7 +25,7 @@ function AdminDashboard() {
 
   const carregarTodasReservas = async () => {
     try {
-      const response = await axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/bookings/all', {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings/all', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTodasReservas(response.data);
@@ -51,7 +51,7 @@ function AdminDashboard() {
     setModalSucesso('');
 
     try {
-      await axios.post('https://projetofinalreservaoffice-backend.onrender.com/api/auth/register', {
+      await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/auth/register', {
         name: novoNome,
         email: novoEmail,
         password: novaPassword

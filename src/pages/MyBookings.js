@@ -30,7 +30,7 @@ function MyBookings() {
 
   const carregarReservas = async () => {
     try {
-      const response = await axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setReservas(response.data);
@@ -42,7 +42,7 @@ function MyBookings() {
 
   useEffect(() => {
     // Pedido GET ao Backend para listar as reservas
-    axios.get('https://projetofinalreservaoffice-backend.onrender.com/api/bookings', {
+    axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
       headers: { Authorization: `Bearer ${token}` } // O Token garante que o backend só devolve as reservas Deste utilizador
     })
       .then((response) => setReservas(response.data)) // Atualiza o estado com os dados da API
@@ -58,7 +58,7 @@ function MyBookings() {
     if (!window.confirm('Queres mesmo cancelar esta reserva?')) return;
 
     try {
-      await axios.put(`https://projetofinalreservaoffice-backend.onrender.com/api/bookings/${id}/cancel`, {}, {
+      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/bookings/${id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       alert('Reserva cancelada com sucesso!');
