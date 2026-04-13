@@ -14,6 +14,8 @@ function Dashboard() {
 
   const [statusFiltro, setStatusFiltro] = useState('todos'); // Pode ser: 'todos', 'disponivel', 'ocupado', 'manutencao'
 
+  const [tiposDesmarcados, setTiposDesmarcados] = useState([]); // Guarda os tipos que o utilizador tirou o visto
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Estado para guardar as datas da reserva (com valores padrão para o dia atual)
@@ -126,8 +128,19 @@ function Dashboard() {
   // Descobrir automaticamente todos os pisos únicos que vêm da Base de Dados
   const pisosDisponiveis = [...new Set(recursos.map(r => r.floor))].filter(Boolean).sort();
 
+  // Descobrir os tipos únicos de recursos na BD
+  const tiposDisponiveis = [...new Set(recursos.map(r => r.type))].filter(Boolean).sort();
+  
+  // Função para traduzir o nome inglês da BD para português no ecrã
+  const traduzirTipo = (tipo) => {
+    if (tipo === 'desk') return 'Mesas';
+    if (tipo === 'room') return 'Salas de Reunião';
+    if (tipo === 'monitor') return 'Monitores';
+    return tipo;
+  };
+
   // Criar uma nova lista apenas com os recursos que passam no filtro
-  // Lógica de Filtragem Múltipla (Piso + Estado)
+  // Lógica de Filtragem Múltipla (Piso + Estado + Tipo)
   const recursosFiltrados = recursos.filter((recurso) => {
     // Verifica o Piso
     const passaPiso = pisoFiltro === '' || String(recurso.floor) === String(pisoFiltro);
@@ -143,8 +156,11 @@ function Dashboard() {
     else if (statusFiltro === 'ocupado') passaStatus = isAlreadyBooked && !isMaintenance;
     else if (statusFiltro === 'manutencao') passaStatus = isMaintenance;
 
-    // A mesa só aparece se passar nos dois filtros
-    return passaPiso && passaStatus;
+    // Verifica a Checklist de Tipos
+    const passaTipo = !tiposDesmarcados.includes(recurso.type);
+
+    // A mesa só aparece se passar nos três filtros
+    return passaPiso && passaStatus && passaTipo;
   });
 
   return (
@@ -228,6 +244,34 @@ function Dashboard() {
                 ))}
               </select>
             </div>
+
+            {/* TIPO DE RECURSO */}
+            {tiposDisponiveis.length > 0 && (
+              <div className="mb-5 border-t border-gray-100 pt-5">
+                <label className="text-xs font-semibold text-gray-600 mb-2 block">TIPO DE RECURSO</label>
+                <div className="space-y-2 text-sm text-gray-700">
+                  {tiposDisponiveis.map(tipo => (
+                    <label key={tipo} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors">
+                      <input 
+                        type="checkbox" 
+                        checked={!tiposDesmarcados.includes(tipo)}
+                        onChange={() => {
+                          if (tiposDesmarcados.includes(tipo)) {
+                            // Se estava desmarcado, volta a marcar (tira da lista)
+                            setTiposDesmarcados(prev => prev.filter(t => t !== tipo));
+                          } else {
+                            // Se estava marcado, desmarca (adiciona à lista)
+                            setTiposDesmarcados(prev => [...prev, tipo]);
+                          }
+                        }}
+                        className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer border-gray-300" 
+                      /> 
+                      <span className="capitalize">{traduzirTipo(tipo)}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
             
           </div>
         </aside>
