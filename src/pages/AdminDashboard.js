@@ -4,7 +4,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 
 function AdminDashboard() {
+  // Estados para as Reservas
   const [todasReservas, setTodasReservas] = useState([]);
+  
+  // NOVO: Estados para os Utilizadores e Controlo de Tabs
+  const [utilizadores, setUtilizadores] = useState([]);
+  const [activeTab, setActiveTab] = useState('reservas'); // Pode ser 'reservas' ou 'utilizadores'
+  
   const [erro, setErro] = useState(null);
   
   // Estados para controlar o Modal de Registo
@@ -39,12 +45,24 @@ function AdminDashboard() {
     }
   };
 
+  // NOVO: Função para ir buscar os utilizadores à API
+  const carregarUtilizadores = async () => {
+    try {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/auth/users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUtilizadores(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar utilizadores", error);
+    }
+  };
+
   useEffect(() => {
     carregarTodasReservas();
+    carregarUtilizadores(); // Chamamos também os utilizadores ao abrir a página
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
-  // Função para lidar com a submissão do formulário de novo utilizador
   const handleRegistarUtilizador = async (e) => {
     e.preventDefault();
     setModalErro('');
@@ -59,12 +77,13 @@ function AdminDashboard() {
 
       setModalSucesso(`Utilizador ${novoNome} registado com sucesso!`);
       
-      // Limpar os campos do formulário
       setNovoNome('');
       setNovoEmail('');
       setNovaPassword('');
       
-      // Fechar o modal após 2 segundos
+      // Quando criamos um user novo, recarregamos logo a lista para ele aparecer na tabela!
+      carregarUtilizadores();
+
       setTimeout(() => {
         setIsModalOpen(false);
         setModalSucesso('');
@@ -77,7 +96,6 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative">
-      {/* Navbar Superior - Versão Admin */}
       <nav className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex justify-between items-center sticky top-0 z-10">
         <div className="flex items-center gap-2">
           <div className="bg-red-600 p-1.5 rounded-lg">
@@ -96,10 +114,24 @@ function AdminDashboard() {
         </div>
       </nav>
 
-      {/* Corpo da Página */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-gray-800">Visão Geral de Reservas</h2>
+          
+          {/* NOVO: Sistema de Tabs */}
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setActiveTab('reservas')}
+              className={`px-5 py-2 font-bold rounded-lg transition-colors ${activeTab === 'reservas' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Visão Geral de Reservas
+            </button>
+            <button 
+              onClick={() => setActiveTab('utilizadores')}
+              className={`px-5 py-2 font-bold rounded-lg transition-colors ${activeTab === 'utilizadores' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Lista de Colaboradores
+            </button>
+          </div>
           
           <button 
             onClick={() => setIsModalOpen(true)}
@@ -115,108 +147,120 @@ function AdminDashboard() {
             <h3 className="text-lg font-bold">{erro}</h3>
           </div>
         ) : (
-          <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
-            <table className="w-full text-left text-sm text-gray-600">
-              <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
-                <tr>
-                  <th className="px-6 py-4 font-semibold">Colaborador</th>
-                  <th className="px-6 py-4 font-semibold">Recurso</th>
-                  <th className="px-6 py-4 font-semibold">Data Início</th>
-                  <th className="px-6 py-4 font-semibold">Data Fim</th>
-                  <th className="px-6 py-4 font-semibold">Estado</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {todasReservas.length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">Não existem reservas ativas no sistema.</td>
-                  </tr>
-                ) : (
-                  todasReservas.map((reserva) => {
-                    const dataInicio = new Date(reserva.start_time).toLocaleString('pt-PT');
-                    const dataFim = new Date(reserva.end_time).toLocaleString('pt-PT');
-                    const ativa = reserva.status === 'confirmed';
-
-                    return (
-                      <tr key={reserva.booking_id} className="hover:bg-gray-50 transition-colors">
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-gray-800 block">{reserva.user_name}</span>
-                          <span className="text-xs text-gray-400">{reserva.user_email}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="font-semibold text-gray-800 block">{reserva.resource_name}</span>
-                          <span className="text-xs text-gray-400 capitalize">{reserva.resource_type}</span>
-                        </td>
-                        <td className="px-6 py-4">{dataInicio}</td>
-                        <td className="px-6 py-4">{dataFim}</td>
-                        <td className="px-6 py-4">
-                          <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                            {ativa ? 'Confirmada' : 'Cancelada'}
-                          </span>
-                        </td>
+          <>
+            {/* TABELA DE RESERVAS */}
+            {activeTab === 'reservas' && (
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
+                <table className="w-full text-left text-sm text-gray-600">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Colaborador</th>
+                      <th className="px-6 py-4 font-semibold">Recurso</th>
+                      <th className="px-6 py-4 font-semibold">Data Início</th>
+                      <th className="px-6 py-4 font-semibold">Data Fim</th>
+                      <th className="px-6 py-4 font-semibold">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {todasReservas.length === 0 ? (
+                      <tr>
+                        <td colSpan="5" className="px-6 py-8 text-center text-gray-500">Não existem reservas ativas no sistema.</td>
                       </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
-          </div>
+                    ) : (
+                      todasReservas.map((reserva) => {
+                        const dataInicio = new Date(reserva.start_time).toLocaleString('pt-PT');
+                        const dataFim = new Date(reserva.end_time).toLocaleString('pt-PT');
+                        const ativa = reserva.status === 'confirmed';
+
+                        return (
+                          <tr key={reserva.booking_id} className="hover:bg-gray-50 transition-colors">
+                            <td className="px-6 py-4">
+                              <span className="font-semibold text-gray-800 block">{reserva.user_name}</span>
+                              <span className="text-xs text-gray-400">{reserva.user_email}</span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className="font-semibold text-gray-800 block">{reserva.resource_name}</span>
+                              <span className="text-xs text-gray-400 capitalize">{reserva.resource_type}</span>
+                            </td>
+                            <td className="px-6 py-4">{dataInicio}</td>
+                            <td className="px-6 py-4">{dataFim}</td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                                {ativa ? 'Confirmada' : 'Cancelada'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {/* TABELA DE UTILIZADORES */}
+            {activeTab === 'utilizadores' && (
+              <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
+                <table className="w-full text-left text-sm text-gray-600">
+                  <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">ID</th>
+                      <th className="px-6 py-4 font-semibold">Nome Completo</th>
+                      <th className="px-6 py-4 font-semibold">Email</th>
+                      <th className="px-6 py-4 font-semibold">Cargo (Role)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {utilizadores.length === 0 ? (
+                      <tr>
+                        <td colSpan="4" className="px-6 py-8 text-center text-gray-500">A carregar colaboradores...</td>
+                      </tr>
+                    ) : (
+                      utilizadores.map((user) => (
+                        <tr key={user.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="px-6 py-4 font-mono text-xs text-gray-400">#{user.id}</td>
+                          <td className="px-6 py-4 font-semibold text-gray-800">{user.name}</td>
+                          <td className="px-6 py-4">{user.email}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
+                              {user.role === 'admin' ? 'Administrador' : 'Utilizador'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
         )}
       </main>
 
-      {/* MODAL DE REGISTO (Sobreposição) */}
+      {/* Modal de Registo (Inalterado) */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full relative">
-            
-            {/* Botão de Fechar Modal */}
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
+            <button onClick={() => setIsModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
-
             <h3 className="text-xl font-bold text-gray-800 mb-6">Adicionar Colaborador</h3>
-            
             {modalErro && <div className="mb-4 text-sm text-red-600 bg-red-50 p-3 rounded-lg border border-red-100">{modalErro}</div>}
             {modalSucesso && <div className="mb-4 text-sm text-green-600 bg-green-50 p-3 rounded-lg border border-green-100">{modalSucesso}</div>}
-
             <form onSubmit={handleRegistarUtilizador} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                <input 
-                  type="text" required
-                  value={novoNome} onChange={(e) => setNovoNome(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder="Ex: João Silva"
-                />
+                <input type="text" required value={novoNome} onChange={(e) => setNovoNome(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Ex: João Silva" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email Profissional</label>
-                <input 
-                  type="email" required
-                  value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder="Ex: joao.silva@softinsa.pt"
-                />
+                <input type="email" required value={novoEmail} onChange={(e) => setNovoEmail(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Ex: joao.silva@softinsa.pt" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Palavra-passe Inicial</label>
-                <input 
-                  type="password" required minLength="6"
-                  value={novaPassword} onChange={(e) => setNovaPassword(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  placeholder="Mínimo 6 caracteres"
-                />
+                <input type="password" required minLength="6" value={novaPassword} onChange={(e) => setNovaPassword(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Mínimo 6 caracteres" />
               </div>
-              
-              <button 
-                type="submit" 
-                className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors mt-2"
-              >
-                Criar Conta
-              </button>
+              <button type="submit" className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors mt-2">Criar Conta</button>
             </form>
           </div>
         </div>
