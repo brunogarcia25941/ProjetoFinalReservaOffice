@@ -45,10 +45,10 @@ function AdminDashboard() {
     }
   };
 
-  // NOVO: Função para ir buscar os utilizadores à API
+  // Função para ir buscar os utilizadores à API
   const carregarUtilizadores = async () => {
     try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/auth/users', {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/admin/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUtilizadores(response.data);
