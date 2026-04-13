@@ -12,6 +12,8 @@ function Dashboard() {
   // Estado para guardar o piso selecionado no filtro
   const [pisoFiltro, setPisoFiltro] = useState('');
 
+  const [statusFiltro, setStatusFiltro] = useState('todos'); // Pode ser: 'todos', 'disponivel', 'ocupado', 'manutencao'
+
   const [isLoading, setIsLoading] = useState(true);
 
   // Estado para guardar as datas da reserva (com valores padrão para o dia atual)
@@ -125,9 +127,24 @@ function Dashboard() {
   const pisosDisponiveis = [...new Set(recursos.map(r => r.floor))].filter(Boolean).sort();
 
   // Criar uma nova lista apenas com os recursos que passam no filtro
+  // Lógica de Filtragem Múltipla (Piso + Estado)
   const recursosFiltrados = recursos.filter((recurso) => {
-    if (pisoFiltro === '') return true; // Se o filtro estiver vazio, mostra tudo
-    return String(recurso.floor) === String(pisoFiltro);
+    // Verifica o Piso
+    const passaPiso = pisoFiltro === '' || String(recurso.floor) === String(pisoFiltro);
+
+    // Descobre o estado real desta mesa
+    const isMaintenance = recurso.status === 'maintenance';
+    const isAlreadyBooked = recurso.is_booked === 1;
+    const isAvailable = !isMaintenance && !isAlreadyBooked;
+
+    // Verifica o Filtro dos Botões
+    let passaStatus = true;
+    if (statusFiltro === 'disponivel') passaStatus = isAvailable;
+    else if (statusFiltro === 'ocupado') passaStatus = isAlreadyBooked && !isMaintenance;
+    else if (statusFiltro === 'manutencao') passaStatus = isMaintenance;
+
+    // A mesa só aparece se passar nos dois filtros
+    return passaPiso && passaStatus;
   });
 
   return (
@@ -224,11 +241,31 @@ function Dashboard() {
                 A mostrar {recursosFiltrados.length} recurso(s) {pisoFiltro ? `no Piso ${pisoFiltro}` : 'em todos os pisos'}.
               </p>
             </div>
-            {/* Legenda dos estados */}
-            <div className="flex gap-4 text-xs font-medium">
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-green-100 border border-green-400"></span> Disponível</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-gray-100 border border-gray-400"></span> Ocupado</span>
-              <span className="flex items-center gap-1"><span className="w-3 h-3 rounded-full bg-red-100 border border-red-400"></span> Manutenção</span>
+            {/* Filtros de Estado (Botões Clicáveis) */}
+            <div className="flex gap-2 text-xs font-medium">
+              <button 
+                onClick={() => setStatusFiltro(statusFiltro === 'disponivel' ? 'todos' : 'disponivel')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'disponivel' ? 'bg-green-50 border-green-400 shadow-sm text-green-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-green-100 border border-green-400"></span> 
+                Disponível
+              </button>
+              
+              <button 
+                onClick={() => setStatusFiltro(statusFiltro === 'ocupado' ? 'todos' : 'ocupado')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'ocupado' ? 'bg-gray-100 border-gray-400 shadow-sm text-gray-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-400"></span> 
+                Ocupado
+              </button>
+
+              <button 
+                onClick={() => setStatusFiltro(statusFiltro === 'manutencao' ? 'todos' : 'manutencao')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'manutencao' ? 'bg-red-50 border-red-400 shadow-sm text-red-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
+              >
+                <span className="w-3 h-3 rounded-full bg-red-100 border border-red-400"></span> 
+                Manutenção
+              </button>
             </div>
           </div>
 
