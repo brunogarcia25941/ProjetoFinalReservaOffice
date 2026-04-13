@@ -143,7 +143,7 @@ function Dashboard() {
           <span className="text-xl font-bold text-gray-800">Reserva Office</span>
         </div>
         <div className="flex items-center gap-4 text-sm font-medium text-gray-600">
-          <span className="text-blue-600 border-b-2 border-blue-600 pb-1">Reservar Mesa</span>
+          <span className="text-blue-600 border-b-2 border-blue-600 pb-1">Reservar Recurso</span>
           <Link to="/minhas-reservas" className="hover:text-blue-600 transition-colors">As Minhas Reservas</Link>
           <div className="w-px h-5 bg-gray-300 mx-2"></div>
           <div className="flex items-center gap-2 ">
