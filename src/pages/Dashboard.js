@@ -368,7 +368,7 @@ function Dashboard() {
                     </h3>
                     
                     {/* Grelha apenas com os recursos deste tipo */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-6 gap-3">
                       {recursosDesteTipo.map((recurso) => {
                         const isMaintenance = recurso.status === 'maintenance';
                         const isAlreadyBooked = recurso.is_booked === 1;
@@ -382,9 +382,9 @@ function Dashboard() {
                                 else if (isAlreadyBooked) alert('Lamentamos, mas esta mesa já está reservada para o horário que escolheste.');
                                 else reservarRecurso(recurso.id, recurso.name);
                             }}
-                            className={`relative p-5 rounded-xl border-2 transition-all flex flex-col items-center text-center h-full
+                            className={`relative p-3 rounded-xl border transition-all flex flex-col items-center text-center h-full
                               ${isAvailable 
-                                ? 'bg-green-50/30 border-green-200 hover:border-green-400 hover:shadow-md cursor-pointer hover:-translate-y-1' 
+                                ? 'bg-green-50/30 border-green-200 hover:border-green-400 hover:shadow-sm cursor-pointer hover:-translate-y-1' 
                                 : isAlreadyBooked
                                 ? 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed' 
                                 : 'bg-red-50/50 border-red-200 opacity-60 cursor-not-allowed'   
@@ -392,21 +392,25 @@ function Dashboard() {
                           >
                             
                             {recurso.type === 'monitor' ? (
-                              <svg className={`w-8 h-8 mb-3 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                              <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                             ) : (
-                              <svg className={`w-8 h-8 mb-3 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
+                              <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
                             )}
                             
-                            <span className={`font-bold text-base ${isAvailable ? 'text-gray-800' : 'text-gray-500'}`}>{recurso.name}</span>
+                            <span 
+                              className={`font-bold text-xs ${isAvailable ? 'text-gray-800' : 'text-gray-500'} leading-tight truncate w-full px-1`} 
+                              title={recurso.name}
+                            >
+                              {recurso.name}
+                            </span>
                             
-                            {/* Agora só dizemos o Piso, porque o tipo já está no Título acima! */}
-                            <span className="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                            <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
                               Piso {recurso.floor || '?'}
                             </span>
 
-                            <span className={`mt-4 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full
+                            <span className={`mt-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
                               ${isAvailable ? 'bg-green-100 text-green-700' : isAlreadyBooked ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'}`}>
-                              {isAvailable ? 'Disponível' : isAlreadyBooked ? 'Ocupada' : 'Manutenção'}
+                              {isAvailable ? 'Livre' : isAlreadyBooked ? 'Ocupada' : 'Avariada'}
                             </span>
                           </div>
                         );
