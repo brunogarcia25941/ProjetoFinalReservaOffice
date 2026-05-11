@@ -119,8 +119,8 @@ function MyBookings() {
               </thead>
               <tbody className="divide-y divide-gray-200">
                 {reservas.map((reserva) => {
-                  const dataInicio = new Date(reserva.start_time).toLocaleString('pt-PT');
-                  const dataFim = new Date(reserva.end_time).toLocaleString('pt-PT');
+                  const dataInicio = new Date(reserva.start_time).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+                  const dataFim = new Date(reserva.end_time).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
                   const ativa = reserva.status === 'confirmed';
 
                   return (

@@ -157,7 +157,7 @@ function Dashboard() {
     }
 
       // Mostrar a confirmação com as horas exatas para o utilizador confirmar
-      const mensagemConfirmacao = `Queres mesmo reservar o recurso: ${nome}?\n\nInício: ${new Date(startTimeFormatado).toLocaleString('pt-PT')}\nFim: ${new Date(endTimeFormatado).toLocaleString('pt-PT')}`;
+      const mensagemConfirmacao = `Queres mesmo reservar o recurso: ${nome}?\n\nInício: ${new Date(startTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}\nFim: ${new Date(endTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}`;
       if (!window.confirm(mensagemConfirmacao)) return;
 
       try {
