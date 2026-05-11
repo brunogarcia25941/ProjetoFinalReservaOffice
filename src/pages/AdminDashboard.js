@@ -2,6 +2,8 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
+
 
 function AdminDashboard() {
   // Estados para as Reservas
@@ -116,10 +118,10 @@ function AdminDashboard() {
       await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Utilizador removido.");
+      toast.info("Utilizador removido.");
       carregarUtilizadores(); // Atualiza a tabela
     } catch (error) {
-      alert(error.response?.data?.message || "Erro ao eliminar.");
+      toast.error(error.response?.data?.message || "Erro ao eliminar.");
     }
   };
 
@@ -161,11 +163,13 @@ function AdminDashboard() {
       await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/resources', novoRecurso, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setModalSucesso("Recurso criado!");
+      toast.success("Recurso criado com sucesso!");
+      setIsRecursoModalOpen(false);
       carregarRecursos();
-      setTimeout(() => { setIsRecursoModalOpen(false); setModalSucesso(''); }, 1500);
+
+      setNovoRecurso({ name: '', type: 'desk', floor: 1, status: 'active' });
     } catch (error) {
-      setModalErro(error.response?.data?.message || "Erro ao criar recurso.");
+      toast.error(error.response?.data?.message || "Erro ao criar recurso.");
     }
   };
 
@@ -175,9 +179,10 @@ function AdminDashboard() {
       await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.info("Recurso removido com sucesso.");
       carregarRecursos();
     } catch (error) {
-      alert("Erro ao eliminar recurso.");
+      toast.error("Erro ao eliminar recurso.");
     }
   };
 
@@ -187,11 +192,12 @@ function AdminDashboard() {
       await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${editingRecurso.id}`, editingRecurso, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setModalSucesso("Recurso atualizado!");
+      toast.info("Recurso atualizado!");
+      
+      setIsEditRecursoModalOpen(false);
       carregarRecursos();
-      setTimeout(() => { setIsEditRecursoModalOpen(false); setModalSucesso(''); }, 1500);
     } catch (error) {
-      setModalErro("Erro ao atualizar recurso.");
+      toast.error("Erro ao atualizar recurso.");
     }
   };
 

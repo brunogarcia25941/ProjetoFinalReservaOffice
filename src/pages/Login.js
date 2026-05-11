@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import React, { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 function Login() {
   // useNavigate: Permite redirecionar o utilizador para outras páginas via código
@@ -27,7 +28,7 @@ function Login() {
       navigate('/dashboard');       
     } catch (error) {
       // Se falhar (ex: credenciais erradas), mostra a mensagem de erro na interface
-      setErro('Email ou palavra-passe incorretos.'); 
+      toast.error('Email ou palavra-passe incorretos.');
     }
   };
 
@@ -50,7 +51,6 @@ function Login() {
 
         {/* Formulário */}
         <form onSubmit={fazerLogin} className="space-y-5">
-          {erro && <div className="text-red-500 text-sm text-center bg-red-50 p-2 rounded">{erro}</div>}
           {/* Email */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Endereço de Email</label>

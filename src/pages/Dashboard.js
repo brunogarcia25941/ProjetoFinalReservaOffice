@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 function Dashboard() {
   // --- ESTADOS ---
@@ -26,6 +27,10 @@ function Dashboard() {
   // Estado para saber qual o atalho selecionado e o número de horas personalizado num atalho
   const [atalhoAtivo, setAtalhoAtivo] = useState(null);
   const [numHoras, setNumHoras] = useState(2);
+
+  // Estados para o Modal de Confirmação de Reserva
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [reservaPendente, setReservaPendente] = useState(null); // Guarda a mesa que o user clicou
 
   // Extraímos o token de segurança e a função de logout do contexto global
   const { logout, token, user } = useContext(AuthContext); 
@@ -59,7 +64,7 @@ function Dashboard() {
   };
 
   // Função que aplica as Tags/Atalhos de tempo
-  const aplicarAtalho = (tipo) => {
+  const aplicarAtalho = (tipo, horasPersonalizadas = numHoras) => {
     let inicio = new Date();
     let fim = new Date();
     setAtalhoAtivo(tipo);
@@ -69,7 +74,7 @@ function Dashboard() {
         fim.setHours(18, 0, 0);
     } else if (tipo === 'proximas_h') {
         if (inicio.getHours() < 9) inicio.setHours(9, 0, 0);
-        fim = new Date(inicio.getTime() + numHoras * 60 * 60 * 1000);
+        fim = new Date(inicio.getTime() + horasPersonalizadas * 60 * 60 * 1000);
         if (fim.getHours() >= 18) fim.setHours(18, 0, 0); // Tranca às 18h
     } else if (tipo === 'amanha') {
         inicio.setDate(inicio.getDate() + 1); // Dia seguinte
@@ -133,53 +138,58 @@ function Dashboard() {
   }, [carregarRecursosComDisponibilidade]);
 
   // --- FUNÇÃO DE RESERVA ---
-  const reservarRecurso = async (id, nome) => {
-    // Validar se os campos estão preenchidos
+  // Função 1: Apenas valida e abre o Modal
+  const reservarRecurso = (id, nome) => {
+      // Validar se os campos estão preenchidos
       if (!dataInicio || !dataFim) {
-        alert("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
+        toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
         return;
       }
       
-
-      // Converter do formato do HTML (YYYY-MM-DDTHH:mm) para o MySQL (YYYY-MM-DD HH:mm:00)
+      // Converter do formato do HTML para o MySQL
       const startTimeFormatado = formatMySQLDate(dataInicio);
-      const endTimeFormatado = formatMySQLDate(dataFim);;
+      const endTimeFormatado = formatMySQLDate(dataFim);
 
-      // Validação  para evitar que o fim seja antes do início
+      // Validação para evitar que o fim seja antes do início
       if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
-        alert("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
+        toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
         return;
       }
 
       if (isForaDeHoras) {
         setRecursos([]);
         return;
-    }
+      }
 
-      // Mostrar a confirmação com as horas exatas para o utilizador confirmar
-      const mensagemConfirmacao = `Queres mesmo reservar o recurso: ${nome}?\n\nInício: ${new Date(startTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}\nFim: ${new Date(endTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}`;
-      if (!window.confirm(mensagemConfirmacao)) return;
+      setReservaPendente({ id, nome, startTimeFormatado, endTimeFormatado });
+      setConfirmModalOpen(true);
+  };
+
+  // Função 2: Executa a chamada à API (Chamada quando o utilizador clica "Confirmar" no modal)
+  const confirmarEfetuarReserva = async () => {
+      if (!reservaPendente) return;
 
       try {
-
-        // Enviar os dados
         await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
-          resource_id: id,
-          start_time: startTimeFormatado,
-          end_time: endTimeFormatado
+          resource_id: reservaPendente.id,
+          start_time: reservaPendente.startTimeFormatado,
+          end_time: reservaPendente.endTimeFormatado
         }, {
-          headers: { Authorization: `Bearer ${token}` } // Token obrigatório para criar dados
+          headers: { Authorization: `Bearer ${token}` }
         });
 
-        alert('Reserva efetuada com sucesso!');
-        window.location.reload(); // Recarrega a página para atualizar o estado da mesa
+        toast.success(`Reserva para ${reservaPendente.nome} efetuada com sucesso!`);
+        
+        // Fechar modal, limpar dados pendentes e atualizar as mesas
+        setConfirmModalOpen(false);
+        setReservaPendente(null);
+        carregarRecursosComDisponibilidade(); 
 
       } catch (error) {
-        console.error("Erro ao reservar:", error);
-        // Mostra a mensagem de erro que vem do backend (ex: "Recurso já reservado")
-        alert(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+        toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+        setConfirmModalOpen(false);
       }
-    };
+  };
 
   // Descobrir automaticamente todos os pisos únicos que vêm da Base de Dados
   const pisosDisponiveis = [...new Set(recursos.map(r => r.floor))].filter(Boolean).sort();
@@ -323,7 +333,15 @@ function Dashboard() {
                       value={numHoras} 
                       min="1" 
                       max="9"
-                      onChange={(e) => setNumHoras(parseInt(e.target.value) || 1)}
+                      onChange={(e) => {
+                        const novoValor = parseInt(e.target.value) || 1;
+                        setNumHoras(novoValor); // Atualiza o visual do campo
+                        
+                        // Se o atalho já estiver clicado, recalcula as horas instantaneamente
+                        if (atalhoAtivo === 'proximas_h') {
+                          aplicarAtalho('proximas_h', novoValor);
+                        }
+                      }}
                       className={`w-8 text-center text-[10px] font-bold bg-transparent outline-none ${atalhoAtivo === 'proximas_h' ? 'text-white' : 'text-blue-700'}`}
                     />
                     <button 
@@ -552,6 +570,48 @@ function Dashboard() {
 
         </main>
       </div>
+
+      {/* MODAL DE CONFIRMAÇÃO DE RESERVA */}
+      {confirmModalOpen && reservaPendente && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fade-in px-4">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full relative">
+            <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-center text-gray-800 mb-2">Confirmar Reserva</h3>
+            <p className="text-center text-gray-600 text-sm mb-6">Estás prestes a reservar a <b>{reservaPendente.nome}</b>.</p>
+            
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 mb-8">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Início</span>
+                <span className="font-semibold text-gray-800">{new Date(reservaPendente.startTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase tracking-wider">Fim</span>
+                <span className="font-semibold text-gray-800">{new Date(reservaPendente.endTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button 
+                onClick={() => { setConfirmModalOpen(false); setReservaPendente(null); }} 
+                className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={confirmarEfetuarReserva} 
+                className="flex-1 px-4 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 shadow-md shadow-blue-200 transition-colors"
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

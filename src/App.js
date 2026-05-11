@@ -5,6 +5,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function RotaProtegida({ children }) {
   const { token } = useContext(AuthContext);
@@ -17,6 +19,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ToastContainer position="top-right" autoClose={3000} theme="colored" hideProgressBar={false} />
         <Routes>
           <Route path="/login" element={<Login />} />
           {/* Dashboard envolvido pela RotaProtegida */}

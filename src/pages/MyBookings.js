@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import { toast } from 'react-toastify';
 
 function MyBookings() {
   // --- ESTADOS DO COMPONENTE ---
@@ -50,7 +51,7 @@ function MyBookings() {
       await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/bookings/${id}/cancel`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert('Reserva cancelada com sucesso!');
+      toast.success('Reserva cancelada com sucesso!');
       // atualizar essa linha sem precisar de dar reload à pagina
       setReservas(reservasAnteriores => 
         reservasAnteriores.map(reserva => 
@@ -59,7 +60,7 @@ function MyBookings() {
       );
     } catch (error) {
       console.error("Erro Detalhado:", error.response || error);
-      alert('Erro ao tentar cancelar a reserva. Tenta novamente.');
+      toast.error('Erro ao tentar cancelar a reserva. Tenta novamente.');
     }
   };
 
