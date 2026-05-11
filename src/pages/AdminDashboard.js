@@ -21,6 +21,10 @@ function AdminDashboard() {
   const [modalErro, setModalErro] = useState('');
   const [modalSucesso, setModalSucesso] = useState('');
 
+  // Estados para o Modal de Edição
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '' });
+
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
@@ -91,6 +95,41 @@ function AdminDashboard() {
 
     } catch (error) {
       setModalErro(error.response?.data?.message || "Erro ao tentar registar o utilizador.");
+    }
+  };
+
+  // Função para Eliminar Utilizador
+  const handleEliminarUtilizador = async (id, nome) => {
+    if (!window.confirm(`Tens a certeza que queres eliminar o utilizador ${nome}?`)) return;
+    try {
+      await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("Utilizador removido.");
+      carregarUtilizadores(); // Atualiza a tabela
+    } catch (error) {
+      alert(error.response?.data?.message || "Erro ao eliminar.");
+    }
+  };
+
+  // Função para Editar Utilizador
+  const handleActualizarUtilizador = async (e) => {
+    e.preventDefault();
+    setModalErro('');
+    setModalSucesso('');
+    try {
+      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${editingUser.id}`, {
+        name: editingUser.name,
+        email: editingUser.email,
+        role: editingUser.role
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalSucesso("Dados atualizados!");
+      carregarUtilizadores(); // Atualiza a tabela
+      setTimeout(() => { setIsEditModalOpen(false); setModalSucesso(''); }, 1500);
+    } catch (error) {
+      setModalErro(error.response?.data?.message || "Erro ao atualizar.");
     }
   };
 
@@ -208,6 +247,7 @@ function AdminDashboard() {
                       <th className="px-6 py-4 font-semibold">Nome Completo</th>
                       <th className="px-6 py-4 font-semibold">Email</th>
                       <th className="px-6 py-4 font-semibold">Cargo (Role)</th>
+                      <th className="px-6 py-4 font-semibold text-center">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -222,9 +262,29 @@ function AdminDashboard() {
                           <td className="px-6 py-4 font-semibold text-gray-800">{user.name}</td>
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4">
-                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-700 border border-purple-200' : 'bg-blue-50 text-blue-600 border border-blue-100'}`}>
-                              {user.role === 'admin' ? 'Administrador' : 'Utilizador'}
+                            <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border 
+                              ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
+                                user.role === 'tecnico' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                              {user.role === 'admin' ? 'Administrador' : user.role === 'tecnico' ? 'Técnico' : 'Utilizador'}
                             </span>
+                          </td>
+                          <td className="px-6 py-4 text-center flex justify-center gap-2">
+                            <button 
+                              onClick={() => { setEditingUser(user); setIsEditModalOpen(true); }}
+                              className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                              Editar
+                            </button>
+                            
+                            <button 
+                              onClick={() => handleEliminarUtilizador(user.id, user.name)}
+                              className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
+                            >
+                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                              Eliminar
+                            </button>
                           </td>
                         </tr>
                       ))
@@ -237,7 +297,44 @@ function AdminDashboard() {
         )}
       </main>
 
-      {/* Modal de Registo (Inalterado) */}
+
+      {/* MODAL DE EDIÇÃO */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+          <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full relative">
+            <button onClick={() => setIsEditModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 className="text-xl font-bold mb-6">Editar Colaborador</h3>
+            
+            {modalErro && <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">{modalErro}</div>}
+            {modalSucesso && <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">{modalSucesso}</div>}
+            
+            <form onSubmit={handleActualizarUtilizador} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
+                <input type="text" value={editingUser.name} onChange={(e) => setEditingUser({...editingUser, name: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <input type="email" value={editingUser.email} onChange={(e) => setEditingUser({...editingUser, email: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm" required />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Cargo (Role)</label>
+                <select value={editingUser.role} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm">
+                  <option value="user">Utilizador</option>
+                  <option value="admin">Administrador</option>
+                  <option value="tecnico">Técnico</option>
+                </select>
+              </div>
+              <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 mt-4">Salvar Alterações</button>
+            </form>
+          </div>
+        </div>
+      )}
+    
+
+      {/* Modal de Registo */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
           <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full relative">
