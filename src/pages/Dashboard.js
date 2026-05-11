@@ -23,6 +23,10 @@ function Dashboard() {
   const [dataInicio, setDataInicio] = useState(`${hoje}T09:00`);
   const [dataFim, setDataFim] = useState(`${hoje}T18:00`);
 
+  // Estado para saber qual o atalho selecionado e o número de horas personalizado num atalho
+  const [atalhoAtivo, setAtalhoAtivo] = useState(null);
+  const [numHoras, setNumHoras] = useState(2);
+
   // Extraímos o token de segurança e a função de logout do contexto global
   const { logout, token, user } = useContext(AuthContext); 
   const navigate = useNavigate();
@@ -47,6 +51,47 @@ function Dashboard() {
   // Executa automaticamente quando a página Dashboard é carregada
   // 1. Helper para formatar a data (YYYY-MM-DD HH:mm:00)
   const formatMySQLDate = (htmlDate) => htmlDate.replace('T', ' ') + ':00';
+  
+  // Helper para converter data de JS para o formato do Input HTML (YYYY-MM-DDTHH:mm)
+  const getLocalISOString = (date) => {
+    const offset = date.getTimezoneOffset() * 60000;
+    return (new Date(date - offset)).toISOString().slice(0, 16);
+  };
+
+  // Função que aplica as Tags/Atalhos de tempo
+  const aplicarAtalho = (tipo) => {
+    let inicio = new Date();
+    let fim = new Date();
+    setAtalhoAtivo(tipo);
+
+    if (tipo === 'resto_hoje') {
+        if (inicio.getHours() < 9) inicio.setHours(9, 0, 0); // Se for antes das 9, puxa para as 9
+        fim.setHours(18, 0, 0);
+    } else if (tipo === 'proximas_h') {
+        if (inicio.getHours() < 9) inicio.setHours(9, 0, 0);
+        fim = new Date(inicio.getTime() + numHoras * 60 * 60 * 1000);
+        if (fim.getHours() >= 18) fim.setHours(18, 0, 0); // Tranca às 18h
+    } else if (tipo === 'amanha') {
+        inicio.setDate(inicio.getDate() + 1); // Dia seguinte
+        inicio.setHours(9, 0, 0);
+        fim = new Date(inicio);
+        fim.setHours(18, 0, 0);
+    } else if (tipo === 'semana') {
+        inicio.setHours(9, 0, 0);
+        const diasParaSexta = 5 - fim.getDay(); // Calcula distância até Sexta-feira
+        fim.setDate(fim.getDate() + (diasParaSexta >= 0 ? diasParaSexta : 6));
+        fim.setHours(18, 0, 0);
+    }
+    
+    setDataInicio(getLocalISOString(inicio));
+    setDataFim(getLocalISOString(fim));
+  };
+
+  // Validação: Verifica se as horas escolhidas estão fora do horário (9h-18h)
+  const horaInicio = new Date(dataInicio).getHours();
+  const horaFim = new Date(dataFim).getHours();
+  const minFim = new Date(dataFim).getMinutes();
+  const isForaDeHoras = horaInicio < 9 || horaFim > 18 || (horaFim === 18 && minFim > 0);
 
   // 2. função que chama a rota inteligente
   const carregarRecursosComDisponibilidade = useCallback(async () => {
@@ -61,6 +106,11 @@ function Dashboard() {
     if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
         setRecursos([]); 
         return; 
+    }
+
+    if (isForaDeHoras) {
+        setRecursos([]);
+        return;
     }
 
     try {
@@ -89,6 +139,7 @@ function Dashboard() {
         alert("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
         return;
       }
+      
 
       // Converter do formato do HTML (YYYY-MM-DDTHH:mm) para o MySQL (YYYY-MM-DD HH:mm:00)
       const startTimeFormatado = formatMySQLDate(dataInicio);
@@ -99,6 +150,11 @@ function Dashboard() {
         alert("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
         return;
       }
+
+      if (isForaDeHoras) {
+        setRecursos([]);
+        return;
+    }
 
       // Mostrar a confirmação com as horas exatas para o utilizador confirmar
       const mensagemConfirmacao = `Queres mesmo reservar o recurso: ${nome}?\n\nInício: ${new Date(startTimeFormatado).toLocaleString('pt-PT')}\nFim: ${new Date(endTimeFormatado).toLocaleString('pt-PT')}`;
@@ -163,6 +219,9 @@ function Dashboard() {
     return passaPiso && passaStatus && passaTipo;
   });
 
+
+  
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Navbar Superior */}
@@ -192,7 +251,7 @@ function Dashboard() {
               </Link>
             )}
           </div>
-          <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-800 ml-4 font-medium">
+          <button onClick={handleLogout} className="text-sm text-red-600 hover:text-red-800 ml-2 font-medium">
             Sair
           </button>
         </div>
@@ -215,7 +274,10 @@ function Dashboard() {
                   <input 
                     type="datetime-local" 
                     value={dataInicio}
-                    onChange={(e) => setDataInicio(e.target.value)}
+                    onChange={(e) => {
+                      setDataInicio(e.target.value);
+                      setAtalhoAtivo(null); // Limpa a seleção do atalho
+                    }}
                     className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -224,9 +286,67 @@ function Dashboard() {
                   <input 
                     type="datetime-local" 
                     value={dataFim}
-                    onChange={(e) => setDataFim(e.target.value)}
+                    onChange={(e) => {
+                      setDataFim(e.target.value);
+                      setAtalhoAtivo(null); // Limpa a seleção do atalho
+                    }}
                     className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500"
                   />
+                </div>
+              </div>
+
+              <div className="mt-4 pt-4 border-t border-blue-200/60">
+                <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block flex items-center justify-between">
+                  <span className="flex items-center gap-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    Atalhos Rápidos
+                  </span>
+                  {/* Tooltip simples a usar o title */}
+                  <span title="Escolha um intervalo de tempo predefinido" className="cursor-help text-gray-400">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd"></path></svg>
+                  </span>
+                </label>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {/* Atalho Resto de Hoje */}
+                  <button 
+                    onClick={() => aplicarAtalho('resto_hoje')} 
+                    className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'resto_hoje' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                  >
+                    Resto de Hoje
+                  </button>
+
+                  {/* Atalho Próximas X Horas (Com Input) */}
+                  <div className={`flex items-center border rounded-md transition-all ${atalhoAtivo === 'proximas_h' ? 'border-blue-600 bg-blue-600' : 'border-blue-200 bg-white'}`}>
+                    <input 
+                      type="number" 
+                      value={numHoras} 
+                      min="1" 
+                      max="9"
+                      onChange={(e) => setNumHoras(parseInt(e.target.value) || 1)}
+                      className={`w-8 text-center text-[10px] font-bold bg-transparent outline-none ${atalhoAtivo === 'proximas_h' ? 'text-white' : 'text-blue-700'}`}
+                    />
+                    <button 
+                      onClick={() => aplicarAtalho('proximas_h')} 
+                      className={`text-[10px] font-bold px-2 py-1.5 rounded-r-md transition-all ${atalhoAtivo === 'proximas_h' ? 'text-white hover:bg-blue-700' : 'text-blue-700 border-l border-blue-100 hover:bg-blue-50'}`}
+                    >
+                      Próximas Horas
+                    </button>
+                  </div>
+
+                  <button 
+                    onClick={() => aplicarAtalho('amanha')} 
+                    className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'amanha' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                  >
+                    Amanhã
+                  </button>
+
+                  <button 
+                    onClick={() => aplicarAtalho('semana')} 
+                    className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'semana' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                  >
+                    Esta Semana
+                  </button>
                 </div>
               </div>
             </div>
@@ -328,6 +448,14 @@ function Dashboard() {
             </div>
           )}
 
+          {isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && (
+            <div className="bg-orange-50 text-orange-700 p-8 rounded-xl mb-6 text-center border border-dashed border-orange-300 animate-fade-in">
+              <svg className="w-12 h-12 mx-auto mb-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              <h4 className="font-bold text-lg">Fora do Horário De Escritório</h4>
+              <p className="text-sm mt-1">O escritório funciona apenas entre as <b>09:00 e as 18:00</b>.<br/>Por favor, clica nos atalhos laterais ou ajusta o horário manualmente.</p>
+            </div>
+          )}
+
           {/* Loading state enquanto a API responde */}
           {isLoading && new Date(dataInicio) < new Date(dataFim) && (
               <div className="text-center py-12 text-gray-500 font-medium animate-pulse">
@@ -336,14 +464,14 @@ function Dashboard() {
           )}
 
           {/* Se não houver mesas após o filtro */}
-          {!isLoading && recursosFiltrados.length === 0 && !erro && new Date(dataInicio) < new Date(dataFim) && (
+          {!isLoading && recursosFiltrados.length === 0 && !erro && !isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && (
             <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg border border-dashed border-gray-300">
               Não existem recursos disponíveis para os filtros selecionados.
             </div>
           )}
 
           {/* As Grelhas Agrupadas por Tipo */}
-          {!isLoading && new Date(dataInicio) < new Date(dataFim) && recursosFiltrados.length > 0 && (
+          {!isLoading && new Date(dataInicio) < new Date(dataFim) && !isForaDeHoras && recursosFiltrados.length > 0 && (
             <div className="space-y-10"> {/* Espaçamento entre as categorias */}
               
               {/* 1. Descobrimos quais os "tipos" que existem na nossa lista atual filtrada */}

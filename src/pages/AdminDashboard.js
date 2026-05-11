@@ -25,8 +25,23 @@ function AdminDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '' });
 
+  // Estados para os Recursos
+  const [recursos, setRecursos] = useState([]);
+  const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
+  const [isEditRecursoModalOpen, setIsEditRecursoModalOpen] = useState(false);
+  
+  const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active' });
+  const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '' });
+
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    carregarTodasReservas();
+    carregarUtilizadores(); // Chamamos também os utilizadores ao abrir a página
+    carregarRecursos(); // Chamamos também os recursos ao abrir a página
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
   const handleLogout = () => {
     logout();
@@ -61,11 +76,7 @@ function AdminDashboard() {
     }
   };
 
-  useEffect(() => {
-    carregarTodasReservas();
-    carregarUtilizadores(); // Chamamos também os utilizadores ao abrir a página
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  
 
   const handleRegistarUtilizador = async (e) => {
     e.preventDefault();
@@ -133,6 +144,57 @@ function AdminDashboard() {
     }
   };
 
+  const carregarRecursos = async () => {
+    try {
+      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/resources', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecursos(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar recursos", error);
+    }
+  };
+
+  const handleRegistarRecurso = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/resources', novoRecurso, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalSucesso("Recurso criado!");
+      carregarRecursos();
+      setTimeout(() => { setIsRecursoModalOpen(false); setModalSucesso(''); }, 1500);
+    } catch (error) {
+      setModalErro(error.response?.data?.message || "Erro ao criar recurso.");
+    }
+  };
+
+  const handleEliminarRecurso = async (id, nome) => {
+    if (!window.confirm(`Eliminar o recurso ${nome}?`)) return;
+    try {
+      await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      carregarRecursos();
+    } catch (error) {
+      alert("Erro ao eliminar recurso.");
+    }
+  };
+
+  const handleActualizarRecurso = async (e) => {
+    e.preventDefault();
+    try {
+      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${editingRecurso.id}`, editingRecurso, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setModalSucesso("Recurso atualizado!");
+      carregarRecursos();
+      setTimeout(() => { setIsEditRecursoModalOpen(false); setModalSucesso(''); }, 1500);
+    } catch (error) {
+      setModalErro("Erro ao atualizar recurso.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative">
       <nav className="bg-gray-900 border-b border-gray-800 px-6 py-3 flex justify-between items-center sticky top-0 z-10">
@@ -156,29 +218,50 @@ function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
           
-          {/* NOVO: Sistema de Tabs */}
+          {/* Sistema de Tabs */}
           <div className="flex gap-2">
             <button 
               onClick={() => setActiveTab('reservas')}
-              className={`px-5 py-2 font-bold rounded-lg transition-colors ${activeTab === 'reservas' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+              className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'reservas' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               Visão Geral de Reservas
             </button>
             <button 
               onClick={() => setActiveTab('utilizadores')}
-              className={`px-5 py-2 font-bold rounded-lg transition-colors ${activeTab === 'utilizadores' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+              className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'utilizadores' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               Lista de Colaboradores
             </button>
+            <button 
+              onClick={() => setActiveTab('recursos')}
+              className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'recursos' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Recursos
+            </button>
           </div>
           
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors flex items-center gap-2"
-          >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
-            Registar Novo Colaborador
-          </button>
+          {/* Botões Dinâmicos de Criação */}
+          {activeTab === 'utilizadores' && (
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
+              Registar Novo Colaborador
+            </button>
+          )}
+
+          {activeTab === 'recursos' && (
+            <button 
+              onClick={() => setIsRecursoModalOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+              Adicionar Novo Recurso
+            </button>
+          )}
         </div>
         
         {erro ? (
@@ -190,7 +273,7 @@ function AdminDashboard() {
             {/* TABELA DE RESERVAS */}
             {activeTab === 'reservas' && (
               <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
-                <table className="w-full text-left text-sm text-gray-600">
+                <table className="w-full text-left text-sm text-gray-600 table-fixed">
                   <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
                     <tr>
                       <th className="px-6 py-4 font-semibold">Colaborador</th>
@@ -240,7 +323,7 @@ function AdminDashboard() {
             {/* TABELA DE UTILIZADORES */}
             {activeTab === 'utilizadores' && (
               <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
-                <table className="w-full text-left text-sm text-gray-600">
+                <table className="w-full text-left text-sm text-gray-600 table-fixed">
                   <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
                     <tr>
                       <th className="px-6 py-4 font-semibold">ID</th>
@@ -289,6 +372,40 @@ function AdminDashboard() {
                         </tr>
                       ))
                     )}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {activeTab === 'recursos' && (
+              <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
+                <table className="w-full text-left text-sm table-fixed">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-4 font-semibold">Nome</th>
+                      <th className="px-6 py-4 font-semibold">Tipo</th>
+                      <th className="px-6 py-4 font-semibold">Piso</th>
+                      <th className="px-6 py-4 font-semibold">Estado</th>
+                      <th className="px-6 py-4 font-semibold text-center">Ações</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {recursos.map((r) => (
+                      <tr key={r.id} className="hover:bg-gray-50">
+                        <td className="px-6 py-4 font-semibold">{r.name}</td>
+                        <td className="px-6 py-4 capitalize">{r.type}</td>
+                        <td className="px-6 py-4">Piso {r.floor}</td>
+                        <td className="px-6 py-4">
+                          <span className={`px-2 py-1 text-xs font-bold rounded-full ${r.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {r.status}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-center flex justify-center gap-2">
+                          <button onClick={() => { setEditingRecurso(r); setIsEditRecursoModalOpen(true); }} className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-200">Editar</button>
+                          <button onClick={() => handleEliminarRecurso(r.id, r.name)} className="bg-red-50 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-200">Eliminar</button>
+                        </td>
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
               </div>
@@ -358,6 +475,65 @@ function AdminDashboard() {
                 <input type="password" required minLength="6" value={novaPassword} onChange={(e) => setNovaPassword(e.target.value)} className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-sm" placeholder="Mínimo 6 caracteres" />
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white font-medium py-2.5 rounded-lg hover:bg-blue-700 transition-colors mt-2">Criar Conta</button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Criar Recurso */}
+      {isRecursoModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 animate-fade-in">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full relative border border-gray-100">
+            <button onClick={() => setIsRecursoModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
+              <span className="p-2 bg-green-100 rounded-lg"><svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg></span>
+              Novo Recurso
+            </h3>
+            <form onSubmit={handleRegistarRecurso} className="space-y-4">
+              <input type="text" placeholder="Nome (Ex: Mesa B02)" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" required
+                onChange={(e) => setNovoRecurso({...novoRecurso, name: e.target.value})} />
+              
+              <select className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer" 
+                onChange={(e) => setNovoRecurso({...novoRecurso, type: e.target.value})}>
+                <option value="desk">Mesa (desk)</option>
+                <option value="room">Sala (room)</option>
+                <option value="monitor">Monitor (monitor)</option>
+              </select>
+
+              <input type="number" placeholder="Piso" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" required
+                onChange={(e) => setNovoRecurso({...novoRecurso, floor: e.target.value})} />
+
+              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95">
+                Criar Recurso
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: Editar Recurso */}
+      {isEditRecursoModalOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex justify-center items-center z-50 animate-fade-in">
+          <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-md w-full relative">
+            <button onClick={() => setIsEditRecursoModalOpen(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">Editar {editingRecurso.name}</h3>
+            <form onSubmit={handleActualizarRecurso} className="space-y-4">
+              <input type="text" value={editingRecurso.name} className="w-full border border-gray-300 p-3 rounded-xl text-sm" required
+                onChange={(e) => setEditingRecurso({...editingRecurso, name: e.target.value})} />
+              
+              <select value={editingRecurso.status} className="w-full border border-gray-300 p-3 rounded-xl text-sm bg-white" 
+                onChange={(e) => setEditingRecurso({...editingRecurso, status: e.target.value})}>
+                <option value="active">Ativo (Livre)</option>
+                <option value="maintenance">Em Manutenção</option>
+              </select>
+
+              <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">
+                Salvar Alterações
+              </button>
             </form>
           </div>
         </div>

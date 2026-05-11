@@ -1,3 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Força a janela do browser a ter sempre scroll vertical, evitando que o site fique desalinhado */
+html {
+  overflow-y: scroll;
+}
