@@ -139,56 +139,148 @@ function Dashboard() {
 
   // --- FUNÇÃO DE RESERVA ---
   // Função 1: Apenas valida e abre o Modal
-  const reservarRecurso = (id, nome) => {
-      // Validar se os campos estão preenchidos
-      if (!dataInicio || !dataFim) {
-        toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
-        return;
-      }
-      
-      // Converter do formato do HTML para o MySQL
-      const startTimeFormatado = formatMySQLDate(dataInicio);
-      const endTimeFormatado = formatMySQLDate(dataFim);
+//  const reservarRecurso = (id, nome) => {
+//      // Validar se os campos estão preenchidos
+//      if (!dataInicio || !dataFim) {
+//        toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
+//        return;
+//      }
+//      
+//      // Converter do formato do HTML para o MySQL
+//      const startTimeFormatado = formatMySQLDate(dataInicio);
+//      const endTimeFormatado = formatMySQLDate(dataFim);
+//
+//      // Validação para evitar que o fim seja antes do início
+//      if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
+//        toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
+//        return;
+//      }
+//
+//      if (isForaDeHoras) {
+//        setRecursos([]);
+//        return;
+//      }
+//
+//      setReservaPendente({ id, nome, startTimeFormatado, endTimeFormatado });
+//      setConfirmModalOpen(true);
+//  };
+//
+//  // Função 2: Executa a chamada à API (Chamada quando o utilizador clica "Confirmar" no modal)
+//  const confirmarEfetuarReserva = async () => {
+//      if (!reservaPendente) return;
+//
+//      try {
+//        await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
+//          resource_id: reservaPendente.id,
+//          start_time: reservaPendente.startTimeFormatado,
+//          end_time: reservaPendente.endTimeFormatado
+//        }, {
+//          headers: { Authorization: `Bearer ${token}` }
+//        });
+//
+//        toast.success(`Reserva para ${reservaPendente.nome} efetuada com sucesso!`);
+//        
+//        // Fechar modal, limpar dados pendentes e atualizar as mesas
+//        setConfirmModalOpen(false);
+//        setReservaPendente(null);
+//        carregarRecursosComDisponibilidade(); 
+//
+//      } catch (error) {
+//        toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+//        setConfirmModalOpen(false);
+//      }
+//  };
 
-      // Validação para evitar que o fim seja antes do início
-      if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
-        toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
-        return;
-      }
+const reservarRecurso = async (id, nome) => {
+    // 1. Validações iniciais
+    if (!dataInicio || !dataFim) {
+      toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
+      return;
+    }
+    
+    const startTimeFormatado = formatMySQLDate(dataInicio);
+    const endTimeFormatado = formatMySQLDate(dataFim);
 
-      if (isForaDeHoras) {
-        setRecursos([]);
-        return;
-      }
+    if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
+      toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
+      return;
+    }
 
-      setReservaPendente({ id, nome, startTimeFormatado, endTimeFormatado });
-      setConfirmModalOpen(true);
-  };
+    if (isForaDeHoras) {
+      setRecursos([]);
+      return;
+    }
 
-  // Função 2: Executa a chamada à API (Chamada quando o utilizador clica "Confirmar" no modal)
-  const confirmarEfetuarReserva = async () => {
-      if (!reservaPendente) return;
-
+    // 2. A função que vai de facto à API (para ser chamada se o user confirmar "Sim")
+    const efetuarReservaApi = async () => {
       try {
         await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
-          resource_id: reservaPendente.id,
-          start_time: reservaPendente.startTimeFormatado,
-          end_time: reservaPendente.endTimeFormatado
+          resource_id: id,
+          start_time: startTimeFormatado,
+          end_time: endTimeFormatado
         }, {
           headers: { Authorization: `Bearer ${token}` }
         });
 
-        toast.success(`Reserva para ${reservaPendente.nome} efetuada com sucesso!`);
-        
-        // Fechar modal, limpar dados pendentes e atualizar as mesas
-        setConfirmModalOpen(false);
-        setReservaPendente(null);
+        toast.success(`Reserva para ${nome} efetuada com sucesso!`);
         carregarRecursosComDisponibilidade(); 
 
       } catch (error) {
         toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
-        setConfirmModalOpen(false);
       }
+    };
+
+    // 3. Toast de Confirmação
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Confirmar Reserva</h4>
+          <p className="text-sm text-gray-600 mb-3">
+            Queres reservar a <b>{nome}</b>?
+          </p>
+          
+          <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4 space-y-1.5">
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Início</span>
+              <span className="text-xs font-semibold text-gray-800">
+                {new Date(startTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+              </span>
+            </div>
+            <div className="flex justify-between items-center">
+              <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Fim</span>
+              <span className="text-xs font-semibold text-gray-800">
+                {new Date(endTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+              </span>
+            </div>
+          </div>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { 
+                efetuarReservaApi(); 
+                closeToast(); 
+              }} 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Confirmar
+            </button>
+            <button 
+              onClick={closeToast} 
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ), 
+      {
+        autoClose: false,
+        closeOnClick: false,
+        draggable: false,
+        position: "top-center",
+        theme: "light",
+      }
+    );
   };
 
   // Descobrir automaticamente todos os pisos únicos que vêm da Base de Dados
@@ -572,7 +664,7 @@ function Dashboard() {
       </div>
 
       {/* MODAL DE CONFIRMAÇÃO DE RESERVA */}
-      {confirmModalOpen && reservaPendente && (
+      {/*{confirmModalOpen && reservaPendente && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50 animate-fade-in px-4">
           <div className="bg-white p-8 rounded-2xl shadow-2xl max-w-sm w-full relative">
             <div className="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -609,7 +701,7 @@ function Dashboard() {
             </div>
           </div>
         </div>
-      )}
+      )}*/}
 
 
     </div>

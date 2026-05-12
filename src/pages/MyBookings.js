@@ -33,7 +33,7 @@ function MyBookings() {
   useEffect(() => {
     // Pedido GET ao Backend para listar as reservas
     axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
-      headers: { Authorization: `Bearer ${token}` } // O Token garante que o backend só devolve as reservas Deste utilizador
+      headers: { Authorization: `Bearer ${token}` } // O Token garante que o backend só devolve as reservas deste utilizador
     })
       .then((response) => setReservas(response.data)) // Atualiza o estado com os dados da API
       .catch((error) => {
@@ -43,25 +43,51 @@ function MyBookings() {
   }, [token]);
 
   // --- FUNÇÃO DE CANCELAMENTO ---
-  const cancelarReserva = async (id) => {
-    // Pede confirmação ao utilizador para evitar cliques acidentais
-    if (!window.confirm('Queres mesmo cancelar esta reserva?')) return;
+  const cancelarReserva = async (id, nomeRecurso) => {
+    // Função que vai à API cancelar
+    const efetuarCancelamento = async () => {
+      try {
+        await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/bookings/${id}/cancel`, {}, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Reserva cancelada com sucesso!');
+        // Atualizar essa linha sem precisar de dar reload à pagina
+        setReservas(reservasAnteriores => 
+          reservasAnteriores.map(reserva => 
+            reserva.booking_id === id ? { ...reserva, status: 'cancelled' } : reserva
+          )
+        );
+      } catch (error) {
+        toast.error('Erro ao tentar cancelar a reserva. Tenta novamente.');
+      }
+    };
 
-    try {
-      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/bookings/${id}/cancel`, {}, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.success('Reserva cancelada com sucesso!');
-      // atualizar essa linha sem precisar de dar reload à pagina
-      setReservas(reservasAnteriores => 
-        reservasAnteriores.map(reserva => 
-          reserva.booking_id === id ? { ...reserva, status: 'cancelled' } : reserva
-        )
-      );
-    } catch (error) {
-      console.error("Erro Detalhado:", error.response || error);
-      toast.error('Erro ao tentar cancelar a reserva. Tenta novamente.');
-    }
+    // Toast de Confirmação
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Cancelar Reserva</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Queres mesmo cancelar a tua reserva para a <b>{nomeRecurso || 'mesa selecionada'}</b>?
+          </p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { efetuarCancelamento(); closeToast(); }} 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Sim, Cancelar
+            </button>
+            <button 
+              onClick={closeToast} 
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Voltar
+            </button>
+          </div>
+        </div>
+      ), 
+      { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
+    );
   };
 
   return (
@@ -140,7 +166,7 @@ function MyBookings() {
                       <td className="px-6 py-4 text-right">
                         {ativa && (
                           <button 
-                            onClick={() => cancelarReserva(reserva.booking_id)}
+                            onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
                             className="text-red-500 hover:text-red-700 font-medium border border-red-200 hover:border-red-300 bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
                           >
                             Cancelar

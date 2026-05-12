@@ -9,7 +9,7 @@ function AdminDashboard() {
   // Estados para as Reservas
   const [todasReservas, setTodasReservas] = useState([]);
   
-  // NOVO: Estados para os Utilizadores e Controlo de Tabs
+  // Estados para os Utilizadores e Controlo de Tabs
   const [utilizadores, setUtilizadores] = useState([]);
   const [activeTab, setActiveTab] = useState('reservas'); // Pode ser 'reservas' ou 'utilizadores'
   
@@ -113,16 +113,45 @@ function AdminDashboard() {
 
   // Função para Eliminar Utilizador
   const handleEliminarUtilizador = async (id, nome) => {
-    if (!window.confirm(`Tens a certeza que queres eliminar o utilizador ${nome}?`)) return;
-    try {
-      await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.info("Utilizador removido.");
-      carregarUtilizadores(); // Atualiza a tabela
-    } catch (error) {
-      toast.error(error.response?.data?.message || "Erro ao eliminar.");
-    }
+    
+    const efetuarEliminacao = async () => {
+      try {
+        await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.info("Utilizador removido com sucesso.");
+        // Atualizar a Tabela de Utilizadores sem precisar de recarregar a página
+        carregarUtilizadores(); 
+      } catch (error) {
+        toast.error(error.response?.data?.message || "Erro ao eliminar utilizador.");
+      }
+    };
+
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Utilizador</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Tens a certeza que queres eliminar o utilizador <b>{nome}</b>? Esta ação não pode ser desfeita.
+          </p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { efetuarEliminacao(); closeToast(); }} 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Eliminar
+            </button>
+            <button 
+              onClick={closeToast} 
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ), 
+      { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
+    );
   };
 
   // Função para Editar Utilizador
@@ -173,17 +202,46 @@ function AdminDashboard() {
     }
   };
 
-  const handleEliminarRecurso = async (id, nome) => {
-    if (!window.confirm(`Eliminar o recurso ${nome}?`)) return;
-    try {
-      await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      toast.info("Recurso removido com sucesso.");
-      carregarRecursos();
-    } catch (error) {
-      toast.error("Erro ao eliminar recurso.");
-    }
+const handleEliminarRecurso = async (id, nome) => {
+    
+    const efetuarEliminacao = async () => {
+      try {
+        await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${id}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.info("Recurso removido com sucesso.");
+        // Atualizar a Tabela de Recursos sem precisar de recarregar a página
+        carregarRecursos();
+      } catch (error) {
+        toast.error("Erro ao eliminar recurso.");
+      }
+    };
+
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            Tens a certeza que queres eliminar o recurso <b>{nome}</b>? 
+          </p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { efetuarEliminacao(); closeToast(); }} 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Eliminar
+            </button>
+            <button 
+              onClick={closeToast} 
+              className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      ), 
+      { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
+    );
   };
 
   const handleActualizarRecurso = async (e) => {
