@@ -243,12 +243,14 @@ const reservarRecurso = async (id, nome) => {
             <div className="flex justify-between items-center">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Início</span>
               <span className="text-xs font-semibold text-gray-800">
+                {/* .replace(' ', 'T') para os fusos horários */}
                 {new Date(startTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Fim</span>
               <span className="text-xs font-semibold text-gray-800">
+                {/* .replace(' ', 'T') para os fusos horários */}
                 {new Date(endTimeFormatado.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
               </span>
             </div>

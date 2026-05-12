@@ -3,6 +3,12 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import FullCalendar from '@fullcalendar/react';
+import dayGridPlugin from '@fullcalendar/daygrid'; // Para a vista de "Mês"
+import timeGridPlugin from '@fullcalendar/timegrid'; // Para a vista de "Semana/Dia" com as horas
+import interactionPlugin from '@fullcalendar/interaction'; // Para podermos clicar nas reservas
+import ptLocale from '@fullcalendar/core/locales/pt'; // Tradução para Português
+import listPlugin from '@fullcalendar/list';
 
 function MyBookings() {
   // --- ESTADOS DO COMPONENTE ---
@@ -54,7 +60,7 @@ function MyBookings() {
         // Atualizar essa linha sem precisar de dar reload à pagina
         setReservas(reservasAnteriores => 
           reservasAnteriores.map(reserva => 
-            reserva.booking_id === id ? { ...reserva, status: 'cancelled' } : reserva
+            reserva.booking_id == id ? { ...reserva, status: 'cancelled' } : reserva
           )
         );
       } catch (error) {
@@ -88,6 +94,41 @@ function MyBookings() {
       ), 
       { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
     );
+  };
+
+
+
+  // 1. LÓGICA DO CALENDÁRIO: Traduzir os dados da API para o formato que o FullCalendar entende
+  const eventosCalendario = reservas
+    // Mantém APENAS as que estão confirmadas
+    .filter(reserva => reserva.status === 'confirmed')
+    .map(reserva => {
+      return {
+        // O ID é necessário para sabermos que reserva foi clicada
+        id: reserva.booking_id,
+        // O 'title' aparece escrito no retângulo do calendário
+        title: reserva.resource_name, 
+        // .replace(' ', 'T') para os fusos horários
+        start: reserva.start_time.replace(' ', 'T'), 
+        end: reserva.end_time.replace(' ', 'T'),
+        backgroundColor: '#2563eb', // São todas azuis
+        borderColor: '#1d4ed8',
+        textColor: '#ffffff',
+        // extendedProps é uma gaveta secreta do calendário para guardar variáveis extra que queremos usar quando clicamos no evento
+        extendedProps: {
+          nomeRecurso: reserva.resource_name
+        }
+      };
+    });
+
+  // 2. LÓGICA DO CALENDÁRIO: O que acontece ao clicar num evento
+  const handleEventClick = (clickInfo) => {
+    const idReserva = clickInfo.event.id;
+    // Vamos ao extendedProps buscar as variáveis guardadas
+    const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
+
+    // Abrir o Toast de cancelamento
+    cancelarReserva(idReserva, nomeDoRecurso);
   };
 
   return (
@@ -124,10 +165,65 @@ function MyBookings() {
 
       {/* Corpo da Página */}
       <main className="max-w-5xl mx-auto px-4 py-8">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Histórico de Reservas</h2>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800">As Minhas Reservas</h2>
+          
+          {/* Legenda Visual */}
+          <div className="flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-lg text-sm border border-blue-100 shadow-sm animate-fade-in">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <span><strong>Dica:</strong> Clica numa reserva do calendário para a cancelar.</span>
+          </div>
+        </div>
         
         {erro && <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">{erro}</div>}
 
+
+        {/* Caixa Branca com Sombra para o Calendário */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 overflow-hidden">
+          
+          <FullCalendar
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]} // Dizemos quais os módulos a usar
+            initialView="dayGridMonth" // Começa por mostrar o Mês inteiro
+            locales={[ptLocale]}
+            locale="pt" // Forçar a linguagem para Português
+            
+            // Barra superior do calendário
+            headerToolbar={{
+              left: 'prev,next today',
+              center: 'title',
+              right: 'dayGridMonth,listWeek,timeGridDay'
+            }}
+            
+            events={eventosCalendario} // Lista de eventos das reservas da API
+            eventClick={handleEventClick} 
+            
+            height="75vh" // Altura: Ocupa 75% da altura da janela do utilizador
+            eventClassNames="cursor-pointer hover:opacity-80 transition-opacity"
+            
+            slotEventOverlap={false}
+
+            // Configurações para as horas não terem formato AM/PM
+            eventTimeFormat={{
+              hour: '2-digit',
+              minute: '2-digit',
+              meridiem: false,
+              hour12: false
+            }}
+            
+            // Traduz os botões de cima (dão problemas se for da tradução automática)
+            buttonText={{
+              today: 'Hoje',
+              month: 'Mês',
+              listWeek: 'Semana',
+              day: 'Dia'
+            }}
+          />
+
+        </div>
+
+        {/* Tabela de Reservas (substituída pelo calendário)
         <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
           {reservas.length === 0 ? (
             <div className="p-8 text-center text-gray-500">
@@ -180,6 +276,7 @@ function MyBookings() {
             </table>
           )}
         </div>
+        */}
       </main>
     </div>
   );
