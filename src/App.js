@@ -2,6 +2,8 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext'; 
 import Login from './pages/Login';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import MyBookings from './pages/MyBookings';
 import AdminDashboard from './pages/AdminDashboard';
@@ -22,6 +24,8 @@ function App() {
         <ToastContainer position="top-right" autoClose={3000} theme="colored" hideProgressBar={false} />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           {/* Dashboard envolvido pela RotaProtegida */}
           <Route path="/dashboard" element={
             <RotaProtegida>

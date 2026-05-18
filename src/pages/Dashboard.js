@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import API_URL from '../config';
 
 function Dashboard() {
   // --- ESTADOS ---
@@ -119,7 +120,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/resources/availability', {
+      const response = await axios.get(`${API_URL}/resources/availability`, {
         headers: { Authorization: `Bearer ${token}` },
         params: { start: startTimeFormatado, end: endTimeFormatado }
       });
@@ -170,7 +171,7 @@ function Dashboard() {
 //      if (!reservaPendente) return;
 //
 //      try {
-//        await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
+//        await axios.post(`${API_URL}/bookings`, {
 //          resource_id: reservaPendente.id,
 //          start_time: reservaPendente.startTimeFormatado,
 //          end_time: reservaPendente.endTimeFormatado
@@ -214,7 +215,7 @@ const reservarRecurso = async (id, nome) => {
     // 2. A função que vai de facto à API (para ser chamada se o user confirmar "Sim")
     const efetuarReservaApi = async () => {
       try {
-        await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
+        await axios.post(`${API_URL}/bookings`, {
           resource_id: id,
           start_time: startTimeFormatado,
           end_time: endTimeFormatado

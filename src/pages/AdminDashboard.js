@@ -3,19 +3,16 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
+import API_URL from '../config';
 
 
 function AdminDashboard() {
-  // Estados para as Reservas
   const [todasReservas, setTodasReservas] = useState([]);
-  
-  // Estados para os Utilizadores e Controlo de Tabs
   const [utilizadores, setUtilizadores] = useState([]);
-  const [activeTab, setActiveTab] = useState('reservas'); // Pode ser 'reservas' ou 'utilizadores'
+  const [activeTab, setActiveTab] = useState('reservas');
   
   const [erro, setErro] = useState(null);
   
-  // Estados para controlar o Modal de Registo
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novoNome, setNovoNome] = useState('');
   const [novoEmail, setNovoEmail] = useState('');
@@ -23,11 +20,9 @@ function AdminDashboard() {
   const [modalErro, setModalErro] = useState('');
   const [modalSucesso, setModalSucesso] = useState('');
 
-  // Estados para o Modal de Edição
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '' });
 
-  // Estados para os Recursos
   const [recursos, setRecursos] = useState([]);
   const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
   const [isEditRecursoModalOpen, setIsEditRecursoModalOpen] = useState(false);
@@ -40,8 +35,8 @@ function AdminDashboard() {
 
   useEffect(() => {
     carregarTodasReservas();
-    carregarUtilizadores(); // Chamamos também os utilizadores ao abrir a página
-    carregarRecursos(); // Chamamos também os recursos ao abrir a página
+    carregarUtilizadores();
+    carregarRecursos();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -52,24 +47,23 @@ function AdminDashboard() {
 
   const carregarTodasReservas = async () => {
     try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings/all', {
+      const response = await axios.get(`${API_URL}/bookings/all`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setTodasReservas(response.data);
     } catch (error) {
       if (error.response?.status === 403) {
-        setErro("Acesso Negado. Não tens permissões de Administrador para ver esta página.");
+        setErro("Acesso Negado.");
       } else {
         const erroReal = error.response?.data?.message || error.message;
-        setErro(`Erro do Servidor: ${erroReal}`);
+        setErro(`Erro: ${erroReal}`);
       }
     }
   };
 
-  // Função para ir buscar os utilizadores à API
   const carregarUtilizadores = async () => {
     try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/admin/users', {
+      const response = await axios.get(`${API_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUtilizadores(response.data);
@@ -78,27 +72,24 @@ function AdminDashboard() {
     }
   };
 
-  
-
   const handleRegistarUtilizador = async (e) => {
     e.preventDefault();
     setModalErro('');
     setModalSucesso('');
 
     try {
-      await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/auth/register', {
+      await axios.post(`${API_URL}/auth/register`, {
         name: novoNome,
         email: novoEmail,
         password: novaPassword
       });
 
-      setModalSucesso(`Utilizador ${novoNome} registado com sucesso!`);
+      setModalSucesso("Utilizador registado!");
       
       setNovoNome('');
       setNovoEmail('');
       setNovaPassword('');
       
-      // Quando criamos um user novo, recarregamos logo a lista para ele aparecer na tabela!
       carregarUtilizadores();
 
       setTimeout(() => {
@@ -107,23 +98,20 @@ function AdminDashboard() {
       }, 2000);
 
     } catch (error) {
-      setModalErro(error.response?.data?.message || "Erro ao tentar registar o utilizador.");
+      setModalErro(error.response?.data?.message || "Erro ao registar.");
     }
   };
 
-  // Função para Eliminar Utilizador
   const handleEliminarUtilizador = async (id, nome) => {
-    
     const efetuarEliminacao = async () => {
       try {
-        await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${id}`, {
+        await axios.delete(`${API_URL}/admin/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.info("Utilizador removido com sucesso.");
-        // Atualizar a Tabela de Utilizadores sem precisar de recarregar a página
+        toast.info("Utilizador removido.");
         carregarUtilizadores(); 
       } catch (error) {
-        toast.error(error.response?.data?.message || "Erro ao eliminar utilizador.");
+        toast.error("Erro ao eliminar.");
       }
     };
 
@@ -132,7 +120,7 @@ function AdminDashboard() {
         <div className="flex flex-col">
           <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Utilizador</h4>
           <p className="text-sm text-gray-600 mb-4">
-            Tens a certeza que queres eliminar o utilizador <b>{nome}</b>? Esta ação não pode ser desfeita.
+            Tens a certeza que queres eliminar <b>{nome}</b>?
           </p>
           <div className="flex gap-2">
             <button 
@@ -154,13 +142,12 @@ function AdminDashboard() {
     );
   };
 
-  // Função para Editar Utilizador
   const handleActualizarUtilizador = async (e) => {
     e.preventDefault();
     setModalErro('');
     setModalSucesso('');
     try {
-      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/admin/users/${editingUser.id}`, {
+      await axios.put(`${API_URL}/admin/users/${editingUser.id}`, {
         name: editingUser.name,
         email: editingUser.email,
         role: editingUser.role
@@ -168,7 +155,7 @@ function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setModalSucesso("Dados atualizados!");
-      carregarUtilizadores(); // Atualiza a tabela
+      carregarUtilizadores();
       setTimeout(() => { setIsEditModalOpen(false); setModalSucesso(''); }, 1500);
     } catch (error) {
       setModalErro(error.response?.data?.message || "Erro ao atualizar.");
@@ -177,7 +164,7 @@ function AdminDashboard() {
 
   const carregarRecursos = async () => {
     try {
-      const response = await axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/resources', {
+      const response = await axios.get(`${API_URL}/resources`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecursos(response.data);
@@ -189,28 +176,26 @@ function AdminDashboard() {
   const handleRegistarRecurso = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('https://projeto-final-reserva-office-backen.vercel.app/api/resources', novoRecurso, {
+      await axios.post(`${API_URL}/resources`, novoRecurso, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      toast.success("Recurso criado com sucesso!");
+      toast.success("Recurso criado!");
       setIsRecursoModalOpen(false);
       carregarRecursos();
 
       setNovoRecurso({ name: '', type: 'desk', floor: 1, status: 'active' });
     } catch (error) {
-      toast.error(error.response?.data?.message || "Erro ao criar recurso.");
+      toast.error("Erro ao criar recurso.");
     }
   };
 
 const handleEliminarRecurso = async (id, nome) => {
-    
     const efetuarEliminacao = async () => {
       try {
-        await axios.delete(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${id}`, {
+        await axios.delete(`${API_URL}/resources/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        toast.info("Recurso removido com sucesso.");
-        // Atualizar a Tabela de Recursos sem precisar de recarregar a página
+        toast.info("Recurso removido.");
         carregarRecursos();
       } catch (error) {
         toast.error("Erro ao eliminar recurso.");
@@ -222,7 +207,7 @@ const handleEliminarRecurso = async (id, nome) => {
         <div className="flex flex-col">
           <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
           <p className="text-sm text-gray-600 mb-4">
-            Tens a certeza que queres eliminar o recurso <b>{nome}</b>? 
+            Tens a certeza que queres eliminar <b>{nome}</b>? 
           </p>
           <div className="flex gap-2">
             <button 
@@ -247,11 +232,10 @@ const handleEliminarRecurso = async (id, nome) => {
   const handleActualizarRecurso = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/resources/${editingRecurso.id}`, editingRecurso, {
+      await axios.put(`${API_URL}/resources/${editingRecurso.id}`, editingRecurso, {
         headers: { Authorization: `Bearer ${token}` }
       });
       toast.info("Recurso atualizado!");
-      
       setIsEditRecursoModalOpen(false);
       carregarRecursos();
     } catch (error) {
