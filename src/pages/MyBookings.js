@@ -73,7 +73,7 @@ function MyBookings() {
         toast.error('Erro ao cancelar a reserva.');
       }
     };
-
+    
     // Confirmação via Toast
     toast(
       ({ closeToast }) => (
@@ -101,6 +101,53 @@ function MyBookings() {
       { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
     );
   };
+
+  // Função para preparar os dados e abrir o Modal de Edição
+  const abrirModalEdicao = (idReserva) => {
+    // Procura a reserva correta na lista
+    const reserva = reservas.find(r => r.booking_id == idReserva);
+    if (reserva) {
+      setReservaEditando({
+        ...reserva,
+        // O input do HTML (datetime-local) exige o formato YYYY-MM-DDTHH:mm
+        start_time: reserva.start_time.replace(' ', 'T').substring(0, 16),
+        end_time: reserva.end_time.replace(' ', 'T').substring(0, 16)
+      });
+      setIsEditModalOpen(true);
+    }
+  };
+
+  // Função que envia as alterações para a API
+  const atualizarReserva = async (e) => {
+    e.preventDefault();
+    try {
+      // Converter de volta para o formato do MySQL (com os segundos :00)
+      const startFormatado = reservaEditando.start_time.replace('T', ' ') + ':00';
+      const endFormatado = reservaEditando.end_time.replace('T', ' ') + ':00';
+
+      await axios.put(`${API_URL}/bookings/${reservaEditando.booking_id}`, {
+        resource_id: reservaEditando.resource_id,
+        start_time: startFormatado,
+        end_time: endFormatado
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      toast.success("Reserva atualizada com sucesso!");
+      setIsEditModalOpen(false);
+
+      // Recarregar as reservas de imediato para o calendário atualizar visualmente
+      const response = await axios.get(`${API_URL}/bookings`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setReservas(response.data);
+
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Erro ao atualizar reserva.");
+    }
+  };
+
+    
 
 
 
@@ -130,11 +177,40 @@ function MyBookings() {
   // 2. LÓGICA DO CALENDÁRIO: O que acontece ao clicar num evento
   const handleEventClick = (clickInfo) => {
     const idReserva = clickInfo.event.id;
-    // Vamos ao extendedProps buscar as variáveis guardadas
     const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
 
-    // Abrir o Toast de cancelamento
-    cancelarReserva(idReserva, nomeDoRecurso);
+    // Toast de Gestão de Reserva
+    toast(
+      ({ closeToast }) => (
+        <div className="flex flex-col">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Gerir Reserva</h4>
+          <p className="text-sm text-gray-600 mb-4">
+            O que pretendes fazer com a reserva de <b>{nomeDoRecurso}</b>?
+          </p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => { closeToast(); abrirModalEdicao(idReserva); }} 
+              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded-lg text-sm transition-colors"
+            >
+              Editar
+            </button>
+            <button 
+              onClick={() => { closeToast(); cancelarReserva(idReserva, nomeDoRecurso); }} 
+              className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 rounded-lg text-sm transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+          <button 
+            onClick={closeToast} 
+            className="mt-2 w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 rounded-lg text-sm transition-colors"
+          >
+            Voltar
+          </button>
+        </div>
+      ), 
+      { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
+    );
   };
 
   return (
@@ -179,7 +255,7 @@ function MyBookings() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
-            <span><strong>Dica:</strong> Clica numa reserva do calendário para a cancelar.</span>
+            <span><strong>Dica:</strong> Clica numa reserva do calendário para a editar ou cancelar.</span>
           </div>
         </div>
         
