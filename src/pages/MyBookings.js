@@ -9,14 +9,16 @@ import timeGridPlugin from '@fullcalendar/timegrid'; // Para a vista de "Semana/
 import interactionPlugin from '@fullcalendar/interaction'; // Para podermos clicar nas reservas
 import ptLocale from '@fullcalendar/core/locales/pt'; // Tradução para Português
 import listPlugin from '@fullcalendar/list';
+import API_URL from '../config';
 
 function MyBookings() {
-  // --- ESTADOS DO COMPONENTE ---
-  // 'reservas' guarda a lista de marcações que vêm da Base de Dados para este utilizador
   const [reservas, setReservas] = useState([]);
+  const [recursos, setRecursos] = useState([]);
   const [erro, setErro] = useState(null);
+
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [reservaEditando, setReservaEditando] = useState(null);
   
-  // Extraímos os dados de sessão (token para a API e função de logout)
   const { logout, token, user } = useContext(AuthContext); 
   const navigate = useNavigate();
 
@@ -29,7 +31,6 @@ function MyBookings() {
     return partes[0][0].toUpperCase();
   };
 
-  // Função para terminar a sessão
   const handleLogout = () => {
     logout();
     navigate('/');
@@ -37,23 +38,28 @@ function MyBookings() {
 
 
   useEffect(() => {
-    // Pedido GET ao Backend para listar as reservas
-    axios.get('https://projeto-final-reserva-office-backen.vercel.app/api/bookings', {
-      headers: { Authorization: `Bearer ${token}` } // O Token garante que o backend só devolve as reservas deste utilizador
+    // Carregar reservas do utilizador
+    axios.get(`${API_URL}/bookings`, {
+      headers: { Authorization: `Bearer ${token}` }
     })
-      .then((response) => setReservas(response.data)) // Atualiza o estado com os dados da API
+      .then((response) => setReservas(response.data))
       .catch((error) => {
         console.error("Erro na API:", error);
         setErro("Não foi possível carregar as tuas reservas.");
       });
+
+    // Carregar lista de recursos para o modal de edição
+    axios.get(`${API_URL}/resources`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then((response) => setRecursos(response.data))
+      .catch((error) => console.error("Erro ao carregar recursos:", error));
   }, [token]);
 
-  // --- FUNÇÃO DE CANCELAMENTO ---
   const cancelarReserva = async (id, nomeRecurso) => {
-    // Função que vai à API cancelar
     const efetuarCancelamento = async () => {
       try {
-        await axios.put(`https://projeto-final-reserva-office-backen.vercel.app/api/bookings/${id}/cancel`, {}, {
+        await axios.put(`${API_URL}/bookings/${id}/cancel`, {}, {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.success('Reserva cancelada com sucesso!');
@@ -64,17 +70,17 @@ function MyBookings() {
           )
         );
       } catch (error) {
-        toast.error('Erro ao tentar cancelar a reserva. Tenta novamente.');
+        toast.error('Erro ao cancelar a reserva.');
       }
     };
 
-    // Toast de Confirmação
+    // Confirmação via Toast
     toast(
       ({ closeToast }) => (
         <div className="flex flex-col">
           <h4 className="font-bold text-gray-800 mb-1 text-base">Cancelar Reserva</h4>
           <p className="text-sm text-gray-600 mb-4">
-            Queres mesmo cancelar a tua reserva para a <b>{nomeRecurso || 'mesa selecionada'}</b>?
+            Queres cancelar a reserva para a <b>{nomeRecurso || 'mesa'}</b>?
           </p>
           <div className="flex gap-2">
             <button 
@@ -237,7 +243,7 @@ function MyBookings() {
                   <th className="px-6 py-4 font-semibold">Data Início</th>
                   <th className="px-6 py-4 font-semibold">Data Fim</th>
                   <th className="px-6 py-4 font-semibold">Estado</th>
-                  <th className="px-6 py-4 font-semibold text-right">Ação</th>
+                  <th className="px-6 py-4 font-semibold text-right">Ações</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -261,12 +267,20 @@ function MyBookings() {
                       </td>
                       <td className="px-6 py-4 text-right">
                         {ativa && (
-                          <button 
-                            onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
-                            className="text-red-500 hover:text-red-700 font-medium border border-red-200 hover:border-red-300 bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
-                          >
-                            Cancelar
-                          </button>
+                          <div className="flex justify-end gap-2">
+                            <button 
+                              onClick={() => abrirModalEdicao(reserva)}
+                              className="text-blue-600 hover:text-blue-800 font-medium border border-blue-200 hover:border-blue-300 bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              Editar
+                            </button>
+                            <button 
+                              onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
+                              className="text-red-500 hover:text-red-700 font-medium border border-red-200 hover:border-red-300 bg-red-50 px-3 py-1.5 rounded-lg transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
                         )}
                       </td>
                     </tr>
@@ -278,6 +292,75 @@ function MyBookings() {
         </div>
         */}
       </main>
+
+      {/* MODAL DE EDIÇÃO */}
+      {isEditModalOpen && reservaEditando && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div className="bg-blue-600 px-6 py-4 flex justify-between items-center">
+              <h3 className="text-white font-bold text-lg">Editar Reserva</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-white hover:text-blue-100">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            <form onSubmit={atualizarReserva} className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1">Recurso</label>
+                <select 
+                  value={reservaEditando.resource_id}
+                  onChange={(e) => setReservaEditando({...reservaEditando, resource_id: e.target.value})}
+                  className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                  required
+                >
+                  {recursos.map(r => (
+                    <option key={r.id} value={r.id}>{r.name} ({r.type})</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Início</label>
+                  <input 
+                    type="datetime-local" 
+                    value={reservaEditando.start_time}
+                    onChange={(e) => setReservaEditando({...reservaEditando, start_time: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Fim</label>
+                  <input 
+                    type="datetime-local" 
+                    value={reservaEditando.end_time}
+                    onChange={(e) => setReservaEditando({...reservaEditando, end_time: e.target.value})}
+                    className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-blue-200 text-sm"
+                >
+                  Guardar Alterações
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
