@@ -12,8 +12,17 @@ import 'react-toastify/dist/ReactToastify.css';
 
 function RotaProtegida({ children }) {
   const { token } = useContext(AuthContext);
-  // Se não houver token, recambia o utilizador para o login
+  // Se não houver token, redireciona o utilizador para o login
   if (!token) return <Navigate to="/login" />;
+  return children;
+}
+
+function RotaAdmin({ children }) {
+  const { token, user } = useContext(AuthContext);
+  // Se não houver token ou o utilizador não for admin, redireciona-o
+  if (!token) return <Navigate to="/login" />;
+  if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
+
   return children;
 }
 
@@ -38,9 +47,9 @@ function App() {
             </RotaProtegida>
           } />
           <Route path="/admin" element={
-            <RotaProtegida>
+            <RotaAdmin>
               <AdminDashboard />
-            </RotaProtegida>
+            </RotaAdmin>
           } />
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>

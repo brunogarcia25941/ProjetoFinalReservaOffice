@@ -9,14 +9,18 @@ const BASE_URL = `${API_URL}/auth`;
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Função auxiliar para decodificar o payload do JWT
+  // Função auxiliar para decodificar o payload do JWT sem depender do backend
   const decodeToken = (token) => {
     try {
-      return JSON.parse(atob(token.split('.')[1]));
+      const payloadBase64 = token.split('.')[1];
+      const decodedJson = atob(payloadBase64);
+      return JSON.parse(decodedJson);
+    
     } catch (e) {
       return null;
     }
   };
+
 
   // Estado do token e do utilizador (carrega e decodifica do localStorage ao iniciar)
   const [token, setToken] = useState(localStorage.getItem('token') || null);

@@ -29,6 +29,7 @@ function AdminDashboard() {
   
   const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active' });
   const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '' });
+  const [picklists, setPicklists] = useState({ roles: [], resourceTypes: [], resourceStatuses: [] });
 
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -37,6 +38,7 @@ function AdminDashboard() {
     carregarTodasReservas();
     carregarUtilizadores();
     carregarRecursos();
+    carregarPicklists();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
@@ -240,6 +242,15 @@ const handleEliminarRecurso = async (id, nome) => {
       carregarRecursos();
     } catch (error) {
       toast.error("Erro ao atualizar recurso.");
+    }
+  };
+
+  const carregarPicklists = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/picklists`);
+      setPicklists(response.data);
+    } catch (error) {
+      console.error("Erro ao carregar listas de seleção", error);
     }
   };
 
@@ -486,10 +497,14 @@ const handleEliminarRecurso = async (id, nome) => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cargo (Role)</label>
-                <select value={editingUser.role} onChange={(e) => setEditingUser({...editingUser, role: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm">
-                  <option value="user">Utilizador</option>
-                  <option value="admin">Administrador</option>
-                  <option value="tecnico">Técnico</option>
+                <select
+                  value={editingUser.role}
+                  onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
+                  className="w-full border border-gray-300 p-2 rounded text-sm"
+                >
+                  {picklists.roles.map(role => (
+                    <option key={role.id} value={role.id}>{role.label}</option>
+                  ))}
                 </select>
               </div>
               <button type="submit" className="w-full bg-blue-600 text-white py-2 rounded font-medium hover:bg-blue-700 mt-4">Salvar Alterações</button>
@@ -542,12 +557,14 @@ const handleEliminarRecurso = async (id, nome) => {
             <form onSubmit={handleRegistarRecurso} className="space-y-4">
               <input type="text" placeholder="Nome (Ex: Mesa B02)" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" required
                 onChange={(e) => setNovoRecurso({...novoRecurso, name: e.target.value})} />
-              
-              <select className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white cursor-pointer" 
-                onChange={(e) => setNovoRecurso({...novoRecurso, type: e.target.value})}>
-                <option value="desk">Mesa (desk)</option>
-                <option value="room">Sala (room)</option>
-                <option value="monitor">Monitor (monitor)</option>
+
+              <select
+                className="w-full border border-gray-300 p-3 rounded-xl text-sm"
+                onChange={(e) => setNovoRecurso({ ...novoRecurso, type: e.target.value })}
+              >
+                {picklists.resourceTypes.map(tipo => (
+                  <option key={tipo.id} value={tipo.id}>{tipo.label}</option>
+                ))}
               </select>
 
               <input type="number" placeholder="Piso" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" required
