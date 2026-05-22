@@ -31,8 +31,7 @@ export function AuthProvider({ children }) {
       
       return true;
     } catch (error) {
-      const detailedError = error.response?.data?.error || error.response?.data?.message || error.message;
-      console.error("Erro no login:", detailedError);
+      console.error("Erro no login:", error.response?.data?.message || error.message);
       throw error;
     }
   };
