@@ -27,8 +27,9 @@ function Login() {
       // Se a promessa for resolvida com sucesso, reencaminha para o painel principal
       navigate('/dashboard');       
     } catch (error) {
-      // Se falhar (ex: credenciais erradas), mostra a mensagem de erro na interface
-      toast.error('Email ou palavra-passe incorretos.');
+      // Se falhar, tenta extrair a mensagem específica do backend (ex: erro 429 ou 401)
+      const mensagemErro = error.response?.data?.message || 'Email ou palavra-passe incorretos.';
+      toast.error(mensagemErro);
     }
   };
 
