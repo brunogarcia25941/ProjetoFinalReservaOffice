@@ -9,11 +9,20 @@ const BASE_URL = `${API_URL}/auth`;
 export const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
-  // Estado do token e do utilizador (carrega do localStorage ao iniciar)
+  // Função auxiliar para decodificar o payload do JWT
+  const decodeToken = (token) => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Estado do token e do utilizador (carrega e decodifica do localStorage ao iniciar)
   const [token, setToken] = useState(localStorage.getItem('token') || null);
   const [user, setUser] = useState(() => {
-    const savedUser = localStorage.getItem('user');
-    return savedUser ? JSON.parse(savedUser) : null;
+    const savedToken = localStorage.getItem('token');
+    return savedToken ? decodeToken(savedToken) : null;
   });
 
   const login = async (email, password) => {
@@ -21,13 +30,12 @@ export function AuthProvider({ children }) {
       const response = await axios.post(`${BASE_URL}/login`, { email, password });
       
       const newToken = response.data.accessToken;
-      const userData = response.data.user; 
+      const userData = decodeToken(newToken); 
       
       setToken(newToken);
       setUser(userData); 
       
       localStorage.setItem('token', newToken);
-      localStorage.setItem('user', JSON.stringify(userData)); 
       
       return true;
     } catch (error) {
@@ -47,7 +55,6 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null); 
     localStorage.removeItem('token');
-    localStorage.removeItem('user'); 
   };
 
   return (
