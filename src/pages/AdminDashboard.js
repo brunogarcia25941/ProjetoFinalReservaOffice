@@ -1,17 +1,14 @@
-import React, { useEffect, useState, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import API_URL from '../config';
-
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 function AdminDashboard() {
-  const [todasReservas, setTodasReservas] = useState([]);
-  const [utilizadores, setUtilizadores] = useState([]);
   const [activeTab, setActiveTab] = useState('reservas');
   
-  const [erro, setErro] = useState(null);
   
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novoNome, setNovoNome] = useState('');
@@ -23,56 +20,54 @@ function AdminDashboard() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '' });
 
-  const [recursos, setRecursos] = useState([]);
   const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
   const [isEditRecursoModalOpen, setIsEditRecursoModalOpen] = useState(false);
   
   const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active' });
   const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '' });
-  const [picklists, setPicklists] = useState({ roles: [], resourceTypes: [], resourceStatuses: [] });
 
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    carregarTodasReservas();
-    carregarUtilizadores();
-    carregarRecursos();
-    carregarPicklists();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [token]);
+  const queryClient = useQueryClient();
+
+  // Query para Utilizadores
+  const { data: utilizadores = [], isError: isErrorReservas } = useQuery({
+    queryKey: ['utilizadores'],
+    queryFn: () => axios.get(`${API_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    enabled: !!token
+  });
+
+  // Query para Reservas
+  const { data: todasReservas = [] } = useQuery({
+    queryKey: ['reservas'],
+    queryFn: () => axios.get(`${API_URL}/bookings/all`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    enabled: !!token
+  });
+
+  // Query para Recursos
+  const { data: recursos = [] } = useQuery({
+    queryKey: ['recursos'],
+    queryFn: () => axios.get(`${API_URL}/resources`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    enabled: !!token
+  });
+
+  // Query para Picklists
+  const { data: picklists = { roles: [], resourceTypes: [], resourceStatuses: [] } } = useQuery({
+    queryKey: ['picklists'],
+    queryFn: () => axios.get(`${API_URL}/picklists`).then(res => res.data)
+  });
+
+
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  const carregarTodasReservas = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/bookings/all`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setTodasReservas(response.data);
-    } catch (error) {
-      if (error.response?.status === 403) {
-        setErro("Acesso Negado.");
-      } else {
-        const erroReal = error.response?.data?.message || error.message;
-        setErro(`Erro: ${erroReal}`);
-      }
-    }
-  };
 
-  const carregarUtilizadores = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setUtilizadores(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar utilizadores", error);
-    }
-  };
+
+
 
   const handleRegistarUtilizador = async (e) => {
     e.preventDefault();
@@ -92,7 +87,7 @@ function AdminDashboard() {
       setNovoEmail('');
       setNovaPassword('');
       
-      carregarUtilizadores();
+      queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
 
       setTimeout(() => {
         setIsModalOpen(false);
@@ -111,7 +106,7 @@ function AdminDashboard() {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.info("Utilizador removido.");
-        carregarUtilizadores(); 
+        queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
       } catch (error) {
         toast.error("Erro ao eliminar.");
       }
@@ -157,23 +152,13 @@ function AdminDashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setModalSucesso("Dados atualizados!");
-      carregarUtilizadores();
+      queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
       setTimeout(() => { setIsEditModalOpen(false); setModalSucesso(''); }, 1500);
     } catch (error) {
       setModalErro(error.response?.data?.message || "Erro ao atualizar.");
     }
   };
 
-  const carregarRecursos = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/resources`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setRecursos(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar recursos", error);
-    }
-  };
 
   const handleRegistarRecurso = async (e) => {
     e.preventDefault();
@@ -183,7 +168,7 @@ function AdminDashboard() {
       });
       toast.success("Recurso criado!");
       setIsRecursoModalOpen(false);
-      carregarRecursos();
+      queryClient.invalidateQueries({ queryKey: ['recursos'] });
 
       setNovoRecurso({ name: '', type: 'desk', floor: 1, status: 'active' });
     } catch (error) {
@@ -198,7 +183,7 @@ const handleEliminarRecurso = async (id, nome) => {
           headers: { Authorization: `Bearer ${token}` }
         });
         toast.info("Recurso removido.");
-        carregarRecursos();
+        queryClient.invalidateQueries({ queryKey: ['recursos'] });
       } catch (error) {
         toast.error("Erro ao eliminar recurso.");
       }
@@ -239,20 +224,13 @@ const handleEliminarRecurso = async (id, nome) => {
       });
       toast.info("Recurso atualizado!");
       setIsEditRecursoModalOpen(false);
-      carregarRecursos();
+      queryClient.invalidateQueries({ queryKey: ['recursos'] });
     } catch (error) {
       toast.error("Erro ao atualizar recurso.");
     }
   };
 
-  const carregarPicklists = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/picklists`);
-      setPicklists(response.data);
-    } catch (error) {
-      console.error("Erro ao carregar listas de seleção", error);
-    }
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative">
@@ -323,9 +301,9 @@ const handleEliminarRecurso = async (id, nome) => {
           )}
         </div>
         
-        {erro ? (
+        {isErrorReservas ? (
           <div className="bg-red-50 text-red-600 border border-red-200 p-6 rounded-xl text-center shadow-sm">
-            <h3 className="text-lg font-bold">{erro}</h3>
+            <h3 className="text-lg font-bold">Erro ao carregar dados. Verifique a sua ligação.</h3>
           </div>
         ) : (
           <>
@@ -405,10 +383,9 @@ const handleEliminarRecurso = async (id, nome) => {
                           <td className="px-6 py-4">{user.email}</td>
                           <td className="px-6 py-4">
                             <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border 
-                              ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' : 
-                                user.role === 'tecnico' ? 'bg-orange-50 text-orange-700 border-orange-200' : 
+                                ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
                                 'bg-blue-50 text-blue-700 border-blue-200'}`}>
-                              {user.role === 'admin' ? 'Administrador' : user.role === 'tecnico' ? 'Técnico' : 'Utilizador'}
+                              {picklists.roles.find(r => r.id === user.role)?.label || user.role}
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center flex justify-center gap-2">
@@ -590,10 +567,19 @@ const handleEliminarRecurso = async (id, nome) => {
               <input type="text" value={editingRecurso.name} className="w-full border border-gray-300 p-3 rounded-xl text-sm" required
                 onChange={(e) => setEditingRecurso({...editingRecurso, name: e.target.value})} />
               
-              <select value={editingRecurso.status} className="w-full border border-gray-300 p-3 rounded-xl text-sm bg-white" 
+              {/*<select value={editingRecurso.status} className="w-full border border-gray-300 p-3 rounded-xl text-sm bg-white" 
                 onChange={(e) => setEditingRecurso({...editingRecurso, status: e.target.value})}>
                 <option value="active">Ativo (Livre)</option>
                 <option value="maintenance">Em Manutenção</option>
+              </select>*/}
+              <select
+                value={editingRecurso.status}
+                className="w-full border border-gray-300 p-3 rounded-xl text-sm bg-white"
+                onChange={(e) => setEditingRecurso({ ...editingRecurso, status: e.target.value })}
+              >
+                {picklists.resourceStatuses.map(status => (
+                  <option key={status.id} value={status.id}>{status.label}</option>
+                ))}
               </select>
 
               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-all">
