@@ -29,17 +29,53 @@ export function AuthProvider({ children }) {
     return savedToken ? decodeToken(savedToken) : null;
   });
 
+  // Interceptor para lidar com a expiração do Access Token
+  axios.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+      
+      // Se o erro for 401 (Não autorizado) e ainda não tentámos renovar
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        const refreshToken = localStorage.getItem('refreshToken');
+
+        if (refreshToken) {
+          try {
+            const response = await axios.post(`${BASE_URL}/refresh`, { refreshToken });
+            const { accessToken } = response.data;
+            
+            localStorage.setItem('token', accessToken);
+            setToken(accessToken);
+            
+            // Atualizar o header do pedido original e repetir
+            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
+            return axios(originalRequest);
+          } catch (refreshError) {
+            // Se o refresh falhar, forçamos o logout
+            localStorage.removeItem('token');
+            localStorage.removeItem('refreshToken');
+            setToken(null);
+            setUser(null);
+          }
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+
   const login = async (email, password) => {
     try {
       const response = await axios.post(`${BASE_URL}/login`, { email, password });
       
-      const newToken = response.data.accessToken;
-      const userData = decodeToken(newToken); 
+      const { accessToken, refreshToken } = response.data;
+      const userData = decodeToken(accessToken); 
       
-      setToken(newToken);
+      setToken(accessToken);
       setUser(userData); 
       
-      localStorage.setItem('token', newToken);
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('refreshToken', refreshToken);
       
       return true;
     } catch (error) {
@@ -49,8 +85,11 @@ export function AuthProvider({ children }) {
   };
 
   const logout = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
     try {
-      await axios.post(`${BASE_URL}/logout`);
+      await axios.post(`${BASE_URL}/logout`, { refreshToken }, {
+          headers: { Authorization: `Bearer ${token}` }
+      });
     } catch (err) {
       console.log("Erro no logout do servidor", err);
     }
@@ -59,6 +98,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null); 
     localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
   };
 
   return (
