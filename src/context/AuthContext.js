@@ -1,6 +1,7 @@
 import React, { createContext, useState} from 'react';
 import axios from 'axios';
 import API_URL from '../config';
+import { useQuery } from '@tanstack/react-query';
 
 axios.defaults.withCredentials = true;
 
@@ -27,6 +28,21 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const savedToken = localStorage.getItem('token');
     return savedToken ? decodeToken(savedToken) : null;
+  });
+
+  // REACT QUERY: Vai buscar os dados à BD
+  useQuery({
+    queryKey: ['userData', token], // Re-executa se o token mudar
+    queryFn: async () => {
+      const response = await axios.get(`${BASE_URL}/me`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUser(prev => ({ ...prev, ...response.data }));
+      return response.data;
+    },
+    enabled: !!token, // Só executa se houver um token
+    staleTime: Infinity, // Evita pedidos constantes
+    retry: false
   });
 
   // Interceptor para lidar com a expiração do Access Token
