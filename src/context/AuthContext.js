@@ -1,11 +1,6 @@
-import React, { createContext, useState} from 'react';
-import axios from 'axios';
-import API_URL from '../config';
+import React, { createContext, useState } from 'react';
+import api from '../api/axiosConfig';
 import { useQuery } from '@tanstack/react-query';
-
-axios.defaults.withCredentials = true;
-
-const BASE_URL = `${API_URL}/auth`;
 
 export const AuthContext = createContext();
 
@@ -16,12 +11,10 @@ export function AuthProvider({ children }) {
       const payloadBase64 = token.split('.')[1];
       const decodedJson = atob(payloadBase64);
       return JSON.parse(decodedJson);
-    
     } catch (e) {
       return null;
     }
   };
-
 
   // Estado do token e do utilizador (carrega e decodifica do localStorage ao iniciar)
   const [token, setToken] = useState(localStorage.getItem('token') || null);
@@ -34,9 +27,7 @@ export function AuthProvider({ children }) {
   useQuery({
     queryKey: ['userData', token], // Re-executa se o token mudar
     queryFn: async () => {
-      const response = await axios.get(`${BASE_URL}/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      const response = await api.get('/auth/me');
       setUser(prev => ({ ...prev, ...response.data }));
       return response.data;
     },
@@ -45,53 +36,18 @@ export function AuthProvider({ children }) {
     retry: false
   });
 
-  // Interceptor para lidar com a expiração do Access Token
-  axios.interceptors.response.use(
-    (response) => response,
-    async (error) => {
-      const originalRequest = error.config;
-      
-      // Se o erro for 401 (Não autorizado) e ainda não tentámos renovar
-      if (error.response?.status === 401 && !originalRequest._retry) {
-        originalRequest._retry = true;
-        const refreshToken = localStorage.getItem('refreshToken');
-
-        if (refreshToken) {
-          try {
-            const response = await axios.post(`${BASE_URL}/refresh`, { refreshToken });
-            const { accessToken } = response.data;
-            
-            localStorage.setItem('token', accessToken);
-            setToken(accessToken);
-            
-            // Atualizar o header do pedido original e repetir
-            originalRequest.headers['Authorization'] = `Bearer ${accessToken}`;
-            return axios(originalRequest);
-          } catch (refreshError) {
-            // Se o refresh falhar, forçamos o logout
-            localStorage.removeItem('token');
-            localStorage.removeItem('refreshToken');
-            setToken(null);
-            setUser(null);
-          }
-        }
-      }
-      return Promise.reject(error);
-    }
-  );
-
   const login = async (email, password) => {
     try {
-      const response = await axios.post(`${BASE_URL}/login`, { email, password });
+      const response = await api.post('/auth/login', { email, password });
       
       const { accessToken, refreshToken } = response.data;
       const userData = decodeToken(accessToken); 
       
-      setToken(accessToken);
-      setUser(userData); 
-      
       localStorage.setItem('token', accessToken);
       localStorage.setItem('refreshToken', refreshToken);
+      
+      setToken(accessToken);
+      setUser(userData); 
       
       return true;
     } catch (error) {
@@ -103,18 +59,16 @@ export function AuthProvider({ children }) {
   const logout = async () => {
     const refreshToken = localStorage.getItem('refreshToken');
     try {
-      await axios.post(`${BASE_URL}/logout`, { refreshToken }, {
-          headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.post('/auth/logout', { refreshToken });
     } catch (err) {
       console.log("Erro no logout do servidor", err);
     }
     
     // Limpar dados locais
-    setToken(null);
-    setUser(null); 
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
+    setToken(null);
+    setUser(null); 
   };
 
   return (
