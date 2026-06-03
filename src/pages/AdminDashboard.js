@@ -27,8 +27,11 @@ function AdminDashboard() {
   const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active' });
   const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '' });
 
+  const [pisoSelecionado, setPisoSelecionado] = useState(1);
+
   const { token, logout } = useContext(AuthContext);
   const navigate = useNavigate();
+
 
   const queryClient = useQueryClient();
 
@@ -474,16 +477,30 @@ function AdminDashboard() {
               </div>
             )}
             {/* Renderizar o Editor quando a tab 'mapa' estiver ativa */}
-            {activeTab === 'mapa' && (
-              <div className="animate-fade-in">
-                <PlantaEditor
-                  recursos={recursos}
-                  setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)}
-                  salvarCoordenadasNaBD={salvarCoordenadasNaBD}
-                />
-              </div>
-            )}
-          </>
+              {activeTab === 'mapa' && (
+                <div className="animate-fade-in space-y-4">
+                  {/* Seletor de Piso */}
+                  <div className="flex gap-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                    {[1, 2, 3].map(piso => (
+                      <button
+                        key={piso}
+                        onClick={() => setPisoSelecionado(piso)}
+                        className={`px-4 py-2 rounded-lg font-bold transition-all ${pisoSelecionado === piso ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
+                      >
+                        Piso {piso}
+                      </button>
+                    ))}
+                  </div>
+
+                  <PlantaEditor
+                    recursos={recursos.filter(r => Number(r.floor) === pisoSelecionado)} // Filtramos os recursos para mostrar apenas os do piso selecionado
+                    setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)}
+                    salvarCoordenadasNaBD={salvarCoordenadasNaBD}
+                    pisoAtual={pisoSelecionado} // Passamos o piso para o editor
+                  />
+                </div>
+              )}
+            </>
         )}
       </main>
 

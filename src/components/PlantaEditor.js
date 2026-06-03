@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Text, Group, Image } from 'react-konva';
 
-function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
+function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual }) {
   // Referência para o Palco (Stage) do Konva, necessária para capturar a posição do ponteiro do rato
   const stageRef = useRef(null);
   
@@ -14,11 +14,11 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
 
   useEffect(() => {
     const img = new window.Image();
-    img.src = '/planta.png'; // Caminho para a imagem na pasta public/
+    img.src = `/planta${pisoAtual}.png`; // Caminho para a imagem na pasta public/
     img.onload = () => {
       setImageObj(img);
     };
-  }, []);
+  }, [pisoAtual]);
 
   // Quando o utilizador começa o drag e acaba o drag
   const handleStageDragStart = (id) => {
@@ -139,9 +139,9 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
               >
                 {/* Formato físico da mesa/sala (Retângulo azul com cantos arredondados por agora) */}
                 <Rect 
-                  width={60} 
-                  height={40} 
-                  fill="#2563eb" 
+                  width={recurso.type === 'room' ? 120 : 60} 
+                  height={recurso.type === 'room' ? 80 : 40} 
+                  fill={recurso.status === 'active' ? '#2563eb' : '#94a3b8'} 
                   cornerRadius={4} 
                   shadowBlur={5} 
                   shadowOpacity={0.2} 
