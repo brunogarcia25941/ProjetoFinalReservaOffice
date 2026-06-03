@@ -5,11 +5,12 @@ import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import API_URL from '../config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import PlantaEditor from '../components/PlantaEditor';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('reservas');
-  
-  
+
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [novoNome, setNovoNome] = useState('');
   const [novoEmail, setNovoEmail] = useState('');
@@ -22,7 +23,7 @@ function AdminDashboard() {
 
   const [isRecursoModalOpen, setIsRecursoModalOpen] = useState(false);
   const [isEditRecursoModalOpen, setIsEditRecursoModalOpen] = useState(false);
-  
+
   const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active' });
   const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '' });
 
@@ -82,11 +83,11 @@ function AdminDashboard() {
       });
 
       setModalSucesso("Utilizador registado!");
-      
+
       setNovoNome('');
       setNovoEmail('');
       setNovaPassword('');
-      
+
       queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
 
       setTimeout(() => {
@@ -120,21 +121,21 @@ function AdminDashboard() {
             Tens a certeza que queres eliminar <b>{nome}</b>?
           </p>
           <div className="flex gap-2">
-            <button 
-              onClick={() => { efetuarEliminacao(); closeToast(); }} 
+            <button
+              onClick={() => { efetuarEliminacao(); closeToast(); }}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Eliminar
             </button>
-            <button 
-              onClick={closeToast} 
+            <button
+              onClick={closeToast}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Cancelar
             </button>
           </div>
         </div>
-      ), 
+      ),
       { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
     );
   };
@@ -176,7 +177,7 @@ function AdminDashboard() {
     }
   };
 
-const handleEliminarRecurso = async (id, nome) => {
+  const handleEliminarRecurso = async (id, nome) => {
     const efetuarEliminacao = async () => {
       try {
         await axios.delete(`${API_URL}/resources/${id}`, {
@@ -194,24 +195,24 @@ const handleEliminarRecurso = async (id, nome) => {
         <div className="flex flex-col">
           <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
           <p className="text-sm text-gray-600 mb-4">
-            Tens a certeza que queres eliminar <b>{nome}</b>? 
+            Tens a certeza que queres eliminar <b>{nome}</b>?
           </p>
           <div className="flex gap-2">
-            <button 
-              onClick={() => { efetuarEliminacao(); closeToast(); }} 
+            <button
+              onClick={() => { efetuarEliminacao(); closeToast(); }}
               className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Eliminar
             </button>
-            <button 
-              onClick={closeToast} 
+            <button
+              onClick={closeToast}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Cancelar
             </button>
           </div>
         </div>
-      ), 
+      ),
       { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" }
     );
   };
@@ -227,6 +228,18 @@ const handleEliminarRecurso = async (id, nome) => {
       queryClient.invalidateQueries({ queryKey: ['recursos'] });
     } catch (error) {
       toast.error("Erro ao atualizar recurso.");
+    }
+  };
+
+
+  const salvarCoordenadasNaBD = async (id, x, y) => {
+    try {
+      await axios.put(`${API_URL}/resources/${id}/position`, { pos_x: x, pos_y: y }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success("Posição do recurso atualizada no mapa!");
+    } catch (error) {
+      toast.error("Erro ao guardar a posição no servidor.");
     }
   };
 
@@ -254,32 +267,38 @@ const handleEliminarRecurso = async (id, nome) => {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
-          
+
           {/* Sistema de Tabs */}
           <div className="flex gap-2">
-            <button 
+            <button
               onClick={() => setActiveTab('reservas')}
               className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'reservas' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               Visão Geral de Reservas
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('utilizadores')}
               className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'utilizadores' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               Lista de Colaboradores
             </button>
-            <button 
+            <button
               onClick={() => setActiveTab('recursos')}
               className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'recursos' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
             >
               Recursos
             </button>
+            <button
+              onClick={() => setActiveTab('mapa')}
+              className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 ${activeTab === 'mapa' ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+            >
+              Mapa do Escritório
+            </button>
           </div>
-          
+
           {/* Botões Dinâmicos de Criação */}
           {activeTab === 'utilizadores' && (
-            <button 
+            <button
               onClick={() => setIsModalOpen(true)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95"
             >
@@ -289,18 +308,18 @@ const handleEliminarRecurso = async (id, nome) => {
           )}
 
           {activeTab === 'recursos' && (
-            <button 
+            <button
               onClick={() => setIsRecursoModalOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
               Adicionar Novo Recurso
             </button>
           )}
         </div>
-        
+
         {isErrorReservas ? (
           <div className="bg-red-50 text-red-600 border border-red-200 p-6 rounded-xl text-center shadow-sm">
             <h3 className="text-lg font-bold">Erro ao carregar dados. Verifique a sua ligação.</h3>
@@ -389,15 +408,15 @@ const handleEliminarRecurso = async (id, nome) => {
                             </span>
                           </td>
                           <td className="px-6 py-4 text-center flex justify-center gap-2">
-                            <button 
+                            <button
                               onClick={() => { setEditingUser(user); setIsEditModalOpen(true); }}
                               className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
                             >
                               <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                               Editar
                             </button>
-                            
-                            <button 
+
+                            <button
                               onClick={() => handleEliminarUtilizador(user.id, user.name)}
                               className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
                             >
@@ -446,6 +465,16 @@ const handleEliminarRecurso = async (id, nome) => {
                 </table>
               </div>
             )}
+            {/* Renderizar o Editor quando a tab 'mapa' estiver ativa */}
+            {activeTab === 'mapa' && (
+              <div className="animate-fade-in">
+                <PlantaEditor
+                  recursos={recursos}
+                  setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)}
+                  salvarCoordenadasNaBD={salvarCoordenadasNaBD}
+                />
+              </div>
+            )}
           </>
         )}
       </main>
@@ -459,18 +488,18 @@ const handleEliminarRecurso = async (id, nome) => {
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
             </button>
             <h3 className="text-xl font-bold mb-6">Editar Colaborador</h3>
-            
+
             {modalErro && <div className="mb-4 text-red-600 text-sm bg-red-50 p-2 rounded">{modalErro}</div>}
             {modalSucesso && <div className="mb-4 text-green-600 text-sm bg-green-50 p-2 rounded">{modalSucesso}</div>}
-            
+
             <form onSubmit={handleActualizarUtilizador} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Nome Completo</label>
-                <input type="text" value={editingUser.name} onChange={(e) => setEditingUser({...editingUser, name: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm" required />
+                <input type="text" value={editingUser.name} onChange={(e) => setEditingUser({ ...editingUser, name: e.target.value })} className="w-full border border-gray-300 p-2 rounded text-sm" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                <input type="email" value={editingUser.email} onChange={(e) => setEditingUser({...editingUser, email: e.target.value})} className="w-full border border-gray-300 p-2 rounded text-sm" required />
+                <input type="email" value={editingUser.email} onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })} className="w-full border border-gray-300 p-2 rounded text-sm" required />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Cargo (Role)</label>
@@ -489,7 +518,7 @@ const handleEliminarRecurso = async (id, nome) => {
           </div>
         </div>
       )}
-    
+
 
       {/* Modal de Registo */}
       {isModalOpen && (
@@ -533,7 +562,7 @@ const handleEliminarRecurso = async (id, nome) => {
             </h3>
             <form onSubmit={handleRegistarRecurso} className="space-y-4">
               <input type="text" placeholder="Nome (Ex: Mesa B02)" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none transition-all" required
-                onChange={(e) => setNovoRecurso({...novoRecurso, name: e.target.value})} />
+                onChange={(e) => setNovoRecurso({ ...novoRecurso, name: e.target.value })} />
 
               <select
                 className="w-full border border-gray-300 p-3 rounded-xl text-sm"
@@ -545,7 +574,7 @@ const handleEliminarRecurso = async (id, nome) => {
               </select>
 
               <input type="number" placeholder="Piso" className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" required
-                onChange={(e) => setNovoRecurso({...novoRecurso, floor: e.target.value})} />
+                onChange={(e) => setNovoRecurso({ ...novoRecurso, floor: e.target.value })} />
 
               <button type="submit" className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95">
                 Criar Recurso
@@ -565,8 +594,8 @@ const handleEliminarRecurso = async (id, nome) => {
             <h3 className="text-xl font-bold text-gray-800 mb-6">Editar {editingRecurso.name}</h3>
             <form onSubmit={handleActualizarRecurso} className="space-y-4">
               <input type="text" value={editingRecurso.name} className="w-full border border-gray-300 p-3 rounded-xl text-sm" required
-                onChange={(e) => setEditingRecurso({...editingRecurso, name: e.target.value})} />
-              
+                onChange={(e) => setEditingRecurso({ ...editingRecurso, name: e.target.value })} />
+
               {/*<select value={editingRecurso.status} className="w-full border border-gray-300 p-3 rounded-xl text-sm bg-white" 
                 onChange={(e) => setEditingRecurso({...editingRecurso, status: e.target.value})}>
                 <option value="active">Ativo (Livre)</option>
