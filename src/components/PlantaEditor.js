@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Stage, Layer, Rect, Text, Group } from 'react-konva';
+import React, { useState, useRef, useEffect } from 'react';
+import { Stage, Layer, Rect, Text, Group, Image } from 'react-konva';
 
 function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
   // Referência para o Palco (Stage) do Konva, necessária para capturar a posição do ponteiro do rato
@@ -7,6 +7,18 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
   
   // Estado para armazenar temporariamente o ID do recurso que está a ser arrastado da lista lateral
   const [draggedResourceId, setDraggedResourceId] = useState(null);
+
+
+  // Estado para guardar o objeto da imagem carregada
+  const [imageObj, setImageObj] = useState(null);
+
+  useEffect(() => {
+    const img = new window.Image();
+    img.src = '/planta.png'; // Caminho para a imagem na pasta public/
+    img.onload = () => {
+      setImageObj(img);
+    };
+  }, []);
 
   // Quando o utilizador começa o drag e acaba o drag
   const handleStageDragStart = (id) => {
@@ -21,7 +33,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
     stageRef.current.setPointersPositions(e);
     const pointerPosition = stageRef.current.getPointerPosition();
 
-    const grid = 50; // tamanho da grelha
+    const grid = 25; // tamanho da grelha
     const snappedX = Math.round(pointerPosition.x / grid) * grid;
     const snappedY = Math.round(pointerPosition.y / grid) * grid;
 
@@ -90,27 +102,39 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
         <Stage width={800} height={500} ref={stageRef} className="bg-white shadow-inner">
           {/* O Konva exige que todos os elementos visuais estejam dentro de um Layer (Camada) */}
           <Layer>
-            
+            {/* Imagem de fundo da planta */}
+            {imageObj && (
+              <Image
+                image={imageObj}
+                width={800} 
+                height={500} 
+                opacity={0.5} // torna a planta mais clara para destacar as mesas etc.
+              />
+            )}
+
             {/* Mapeamos e desenhamos apenas os recursos que já têm coordenadas válidas */}
             {recursos.filter(r => r.pos_x !== null && r.pos_x !== undefined).map(recurso => (
               <Group
                 key={recurso.id}
                 x={recurso.pos_x}
                 y={recurso.pos_y}
+                rotation={recurso.rotation || 0}
                 draggable // Torna o elemento arrastável livremente dentro do próprio Canvas
                 
                 // Evento disparado quando o utilizador larga o objeto após arrastá-lo no mapa
                 onDragEnd={(e) => {
-                  const grid = 50; // tamanho da grelha
+                  const grid = 25; // tamanho da grelha
+                  const node=e.target;
                   // Captura as novas coordenadas X e Y relativas ao Stage
-                  const novoX = Math.round(e.target.x() / grid) * grid;
-                  const novoY = Math.round(e.target.y() / grid) * grid;
+                  const novoX = Math.round(node.x() / grid) * grid;
+                  const novoY = Math.round(node.y() / grid) * grid;
 
                   // Atualiza a posição do objeto no mapa para a posição "encaixada" na grelha
-                  e.target.position({ x: novoX, y: novoY });
+                  node.position({ x: novoX, y: novoY });
 
                   // Atualiza a base de dados de imediato para manter o estado persistente
-                  salvarCoordenadasNaBD(recurso.id, novoX, novoY);
+                  const rotacaoAtual = recurso.rotation || 0;
+                  salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
                 }}
               >
                 {/* Formato físico da mesa/sala (Retângulo azul com cantos arredondados por agora) */}
@@ -119,20 +143,41 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD }) {
                   height={40} 
                   fill="#2563eb" 
                   cornerRadius={4} 
-                  shadowBlur={4} 
-                  shadowOpacity={0.1} 
+                  shadowBlur={5} 
+                  shadowOpacity={0.2} 
                 />
                 
                 {/* Texto centralizado contendo o identificador ou nome do recurso */}
                 <Text 
                   text={recurso.name} 
                   fontSize={10} 
-                  fill="#ffffff" 
+                  fill="white" 
                   width={60} 
-                  padding={5} 
-                  align="center" 
-                  verticalAlign="middle" 
+                  padding={5}
+                  align="center"
+                  verticalAlign="middle"
+                  height={40}
                 />
+                {/* BOTÃO RODAR (Círculo azul claro no canto inferior direito) */}
+                <Group
+                  x={45} y={25}
+                  onClick={() => {
+                    const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
+                    salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
+                  }}
+                >
+                  <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
+                  <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
+                </Group>
+
+                {/* BOTÃO REMOVER (Círculo branco com borda vermelha no topo direito) */}
+                <Group
+                  x={45} y={-5}
+                  onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
+                >
+                  <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
+                  <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                </Group>
               </Group>
             ))}
             

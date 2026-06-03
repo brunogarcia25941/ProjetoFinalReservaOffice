@@ -232,11 +232,19 @@ function AdminDashboard() {
   };
 
 
-  const salvarCoordenadasNaBD = async (id, x, y) => {
+  const salvarCoordenadasNaBD = async (id, x, y, r = 0) => {
     try {
-      await axios.put(`${API_URL}/resources/${id}/position`, { pos_x: x, pos_y: y }, {
+      // Garantir que não enviamos valores vazios por acidente
+      const finalX = x === undefined ? null : x;
+      const finalY = y === undefined ? null : y;
+      const finalR = r === undefined ? 0 : r;
+      await axios.put(`${API_URL}/resources/${id}/position`, { pos_x: finalX, pos_y: finalY, rotation: finalR }, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      // ATUALIZAÇÃO LOCAL: Garante que a UI muda sem precisar de refresh
+      queryClient.setQueryData(['recursos'], (antigos) =>
+        antigos.map(rec => rec.id === id ? { ...rec, pos_x: finalX, pos_y: finalY, rotation: finalR } : rec)
+      );
       toast.success("Posição do recurso atualizada no mapa!");
     } catch (error) {
       toast.error("Erro ao guardar a posição no servidor.");
