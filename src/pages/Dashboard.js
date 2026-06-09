@@ -17,6 +17,8 @@ function Dashboard() {
   const [tiposDesmarcados, setTiposDesmarcados] = useState([]);
   const [isRoomBookingModalOpen, setIsRoomBookingModalOpen] = useState(false);
   const [roomBookingData, setRoomBookingData] = useState(null);
+  const [isDeskBookingModalOpen, setIsDeskBookingModalOpen] = useState(false);
+  const [deskBookingData, setDeskBookingData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const hoje = new Date().toISOString().split('T')[0];
@@ -127,6 +129,33 @@ function Dashboard() {
     }
   };
 
+  const confirmarReservaMesa = async (e) => {
+    e.preventDefault();
+    if (!deskBookingData) return;
+
+    try {
+      const payload = {
+        resource_id: deskBookingData.id,
+        start_time: deskBookingData.start_time,
+        end_time: deskBookingData.end_time
+      };
+
+      if (deskBookingData.hasExtra && deskBookingData.extra_resource_id) {
+        payload.extra_resource_id = deskBookingData.extra_resource_id;
+      }
+
+      await api.post(`/bookings`, payload);
+      const deskObj = recursos.find(r => r.id === deskBookingData.id);
+      const deskName = deskObj ? deskObj.name : 'Mesa';
+      toast.success(`Reserva para ${deskName} efetuada com sucesso!`);
+      setIsDeskBookingModalOpen(false);
+      setDeskBookingData(null);
+      carregarRecursosComDisponibilidade();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+    }
+  };
+
   const reservarRecurso = async (id, nome) => {
     if (!dataInicio || !dataFim) {
       toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
@@ -142,6 +171,7 @@ function Dashboard() {
 
     const recursoObj = recursos.find(r => r.id === id);
     const isRoom = recursoObj && recursoObj.type === 'room';
+    const isDesk = recursoObj && recursoObj.type === 'desk';
 
     if (isRoom) {
       setRoomBookingData({
@@ -152,6 +182,19 @@ function Dashboard() {
         guests: []
       });
       setIsRoomBookingModalOpen(true);
+      return;
+    }
+
+    if (isDesk) {
+      setDeskBookingData({
+        id,
+        name: nome,
+        start_time: startTimeFormatado,
+        end_time: endTimeFormatado,
+        extra_resource_id: null,
+        hasExtra: false
+      });
+      setIsDeskBookingModalOpen(true);
       return;
     }
 
@@ -357,6 +400,114 @@ function Dashboard() {
             </div>
           </form>
         )}
+      </Modal>
+
+      <Modal 
+        isOpen={isDeskBookingModalOpen} 
+        onClose={() => { setIsDeskBookingModalOpen(false); setDeskBookingData(null); }} 
+        title="Confirmar Reserva de Mesa"
+      >
+        {deskBookingData && (() => {
+          const deskObj = recursos.find(r => r.id === deskBookingData.id);
+          const monitorsDisponiveis = deskObj ? recursos.filter(r => 
+            r.type === 'monitor' && 
+            r.status === 'active' &&
+            r.is_booked !== 1 &&
+            r.building === deskObj.building
+          ) : [];
+          
+          return (
+            <form onSubmit={confirmarReservaMesa} className="space-y-4">
+              <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-2.5">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500 font-bold uppercase">Mesa</span>
+                  <span className="text-sm font-semibold text-gray-800">{deskBookingData.name}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500 font-bold uppercase">Início</span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {new Date(deskBookingData.start_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-500 font-bold uppercase">Fim</span>
+                  <span className="text-sm font-semibold text-gray-800">
+                    {new Date(deskBookingData.end_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+                  </span>
+                </div>
+              </div>
+
+              <div className="pt-2 border-t border-gray-100">
+                <div 
+                  className="flex items-center space-x-3 p-3 bg-primary-soft border border-primary-light rounded-xl cursor-pointer hover:bg-primary-soft/80 transition-colors"
+                  onClick={() => setDeskBookingData(prev => {
+                    const nextHasExtra = !prev.hasExtra;
+                    return { 
+                      ...prev, 
+                      hasExtra: nextHasExtra, 
+                      extra_resource_id: nextHasExtra ? (monitorsDisponiveis[0]?.id || null) : null 
+                    };
+                  })}
+                >
+                  <input
+                    type="checkbox"
+                    checked={deskBookingData.hasExtra}
+                    onChange={() => {}} // handled by click on parent div
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold text-gray-800">Adicionar Monitor Extra Móvel</span>
+                    <span className="text-xs text-gray-500">Selecione um monitor livre neste edifício</span>
+                  </div>
+                </div>
+
+                {deskBookingData.hasExtra && (
+                  <div className="mt-3 space-y-2 animate-fade-in">
+                    <label className="block text-xs font-bold text-gray-500 uppercase">Selecione o Monitor</label>
+                    {monitorsDisponiveis.length > 0 ? (
+                      <select
+                        value={deskBookingData.extra_resource_id || ''}
+                        onChange={(e) => setDeskBookingData(prev => ({ ...prev, extra_resource_id: e.target.value ? parseInt(e.target.value) : null }))}
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white font-medium text-gray-800"
+                      >
+                        {monitorsDisponiveis.map(m => {
+                          let sizeText = '';
+                          if (m.features) {
+                            const features = typeof m.features === 'string' ? JSON.parse(m.features) : m.features;
+                            if (features.size) sizeText = ` (${features.size})`;
+                          }
+                          return (
+                            <option key={m.id} value={m.id}>{m.name}{sizeText}</option>
+                          );
+                        })}
+                      </select>
+                    ) : (
+                      <p className="text-xs font-semibold text-admin bg-admin-soft p-3 rounded-lg">
+                        De momento, não existem monitores móveis disponíveis neste edifício para o horário selecionado.
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button 
+                  type="button"
+                  onClick={() => { setIsDeskBookingModalOpen(false); setDeskBookingData(null); }}
+                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit"
+                  className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-primary-light text-sm"
+                >
+                  Confirmar Reserva
+                </button>
+              </div>
+            </form>
+          );
+        })()}
       </Modal>
     </div>
   );

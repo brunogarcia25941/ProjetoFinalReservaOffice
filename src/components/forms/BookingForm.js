@@ -4,8 +4,14 @@ import GuestInput from './GuestInput';
 function BookingForm({ booking, resources, onSubmit, onChange, onCancel }) {
   const selectedResource = resources.find(r => String(r.id) === String(booking.resource_id));
   const isRoom = selectedResource && selectedResource.type === 'room';
+  const isDesk = selectedResource && selectedResource.type === 'desk';
 
   const guestEmails = (booking.guests || []).map(g => typeof g === 'string' ? g : g.email);
+  const monitors = resources.filter(r => 
+    r.type === 'monitor' && 
+    r.status === 'active' &&
+    (selectedResource ? r.building === selectedResource.building : true)
+  );
 
   return (
     <form onSubmit={onSubmit} className="p-6 space-y-4">
@@ -52,6 +58,29 @@ function BookingForm({ booking, resources, onSubmit, onChange, onCancel }) {
             guests={guestEmails}
             onChange={(newEmails) => onChange({ ...booking, guests: newEmails })}
           />
+        </div>
+      )}
+
+      {isDesk && (
+        <div className="pt-2 border-t border-gray-100">
+          <label className="block text-sm font-semibold text-gray-700 mb-1">Monitor Extra Móvel (Opcional)</label>
+          <select 
+            value={booking.extra_resource_id || ''}
+            onChange={(e) => onChange({...booking, extra_resource_id: e.target.value ? parseInt(e.target.value) : null})}
+            className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"
+          >
+            <option value="">-- Sem Monitor Extra --</option>
+            {monitors.map(m => {
+              let sizeText = '';
+              if (m.features) {
+                const features = typeof m.features === 'string' ? JSON.parse(m.features) : m.features;
+                if (features.size) sizeText = ` (${features.size})`;
+              }
+              return (
+                <option key={m.id} value={m.id}>{m.name}{sizeText}</option>
+              );
+            })}
+          </select>
         </div>
       )}
 

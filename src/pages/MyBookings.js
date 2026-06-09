@@ -95,7 +95,8 @@ function MyBookings() {
       setReservaEditando({
         ...reserva,
         start_time: reserva.start_time.replace(' ', 'T').substring(0, 16),
-        end_time: reserva.end_time.replace(' ', 'T').substring(0, 16)
+        end_time: reserva.end_time.replace(' ', 'T').substring(0, 16),
+        extra_resource_id: reserva.extra ? reserva.extra.resource_id : null
       });
       setIsEditModalOpen(true);
     }
@@ -111,7 +112,8 @@ function MyBookings() {
         resource_id: reservaEditando.resource_id, 
         start_time: startFormatado, 
         end_time: endFormatado,
-        guests: guestEmails
+        guests: guestEmails,
+        extra_resource_id: reservaEditando.extra_resource_id
       });
       toast.success("Reserva atualizada com sucesso!");
       setIsEditModalOpen(false);
@@ -126,7 +128,7 @@ function MyBookings() {
     .filter(r => r.status === 'confirmed')
     .map(r => ({
       id: r.booking_id,
-      title: r.resource_name, 
+      title: r.resource_name + (r.extra ? ` (+ ${r.extra.resource_name})` : ''), 
       start: r.start_time.replace(' ', 'T'), 
       end: r.end_time.replace(' ', 'T'),
       backgroundColor: '#2563eb',
@@ -139,6 +141,10 @@ function MyBookings() {
     const idReserva = clickInfo.event.id;
     const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
     
+    // Encontrar monitor extra
+    const bookingObj = reservas.find(r => r.booking_id == idReserva);
+    const extraText = bookingObj && bookingObj.extra ? ` + ${bookingObj.extra.resource_name}` : '';
+    
     // Verificar se a reserva está a decorrer agora
     const now = new Date();
     const startTime = new Date(clickInfo.event.extendedProps.startTime);
@@ -148,7 +154,7 @@ function MyBookings() {
     toast(({ closeToast }) => (
       <div className="flex flex-col">
         <h4 className="font-bold text-gray-800 mb-1 text-base">Gerir Reserva</h4>
-        <p className="text-sm text-gray-600 mb-4">O que pretendes fazer com a reserva de <b>{nomeDoRecurso}</b>?</p>
+        <p className="text-sm text-gray-600 mb-4">O que pretendes fazer com a reserva de <b>{nomeDoRecurso}{extraText}</b>?</p>
         
         {isOngoing && (
           <button onClick={() => { closeToast(); terminarReservaCedo(idReserva, nomeDoRecurso); }} className="w-full mb-2 bg-success hover:bg-success-hover text-white font-bold py-2 rounded-lg text-sm transition-colors">
