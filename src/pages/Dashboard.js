@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import API_URL from '../config';
+import PlantaEditor from '../components/PlantaEditor';
 
 function Dashboard() {
   // --- ESTADOS ---
@@ -33,8 +34,11 @@ function Dashboard() {
   const [confirmModalOpen, setConfirmModalOpen] = useState(false);
   const [reservaPendente, setReservaPendente] = useState(null); // Guarda a mesa que o user clicou
 
+  // Estado para alternar entre vista em grelha ou mapa
+  const [vista, setVista] = useState('grelha'); // 'grelha' ou 'mapa'
+
   // Extraímos o token de segurança e a função de logout do contexto global
-  const { logout, token, user } = useContext(AuthContext); 
+  const { logout, token, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   // Função para ir buscar as iniciais (Ex: "Bernardo Alves" -> "BA")
@@ -57,7 +61,7 @@ function Dashboard() {
   // Executa automaticamente quando a página Dashboard é carregada
   // 1. Helper para formatar a data (YYYY-MM-DD HH:mm:00)
   const formatMySQLDate = (htmlDate) => htmlDate.replace('T', ' ') + ':00';
-  
+
   // Helper para converter data de JS para o formato do Input HTML (YYYY-MM-DDTHH:mm)
   const getLocalISOString = (date) => {
     const offset = date.getTimezoneOffset() * 60000;
@@ -71,24 +75,24 @@ function Dashboard() {
     setAtalhoAtivo(tipo);
 
     if (tipo === 'resto_hoje') {
-        if (inicio.getHours() < 9) inicio.setHours(9, 0, 0); // Se for antes das 9, puxa para as 9
-        fim.setHours(18, 0, 0);
+      if (inicio.getHours() < 9) inicio.setHours(9, 0, 0); // Se for antes das 9, puxa para as 9
+      fim.setHours(18, 0, 0);
     } else if (tipo === 'proximas_h') {
-        if (inicio.getHours() < 9) inicio.setHours(9, 0, 0);
-        fim = new Date(inicio.getTime() + horasPersonalizadas * 60 * 60 * 1000);
-        if (fim.getHours() >= 18) fim.setHours(18, 0, 0); // Tranca às 18h
+      if (inicio.getHours() < 9) inicio.setHours(9, 0, 0);
+      fim = new Date(inicio.getTime() + horasPersonalizadas * 60 * 60 * 1000);
+      if (fim.getHours() >= 18) fim.setHours(18, 0, 0); // Tranca às 18h
     } else if (tipo === 'amanha') {
-        inicio.setDate(inicio.getDate() + 1); // Dia seguinte
-        inicio.setHours(9, 0, 0);
-        fim = new Date(inicio);
-        fim.setHours(18, 0, 0);
+      inicio.setDate(inicio.getDate() + 1); // Dia seguinte
+      inicio.setHours(9, 0, 0);
+      fim = new Date(inicio);
+      fim.setHours(18, 0, 0);
     } else if (tipo === 'semana') {
-        inicio.setHours(9, 0, 0);
-        const diasParaSexta = 5 - fim.getDay(); // Calcula distância até Sexta-feira
-        fim.setDate(fim.getDate() + (diasParaSexta >= 0 ? diasParaSexta : 6));
-        fim.setHours(18, 0, 0);
+      inicio.setHours(9, 0, 0);
+      const diasParaSexta = 5 - fim.getDay(); // Calcula distância até Sexta-feira
+      fim.setDate(fim.getDate() + (diasParaSexta >= 0 ? diasParaSexta : 6));
+      fim.setHours(18, 0, 0);
     }
-    
+
     setDataInicio(getLocalISOString(inicio));
     setDataFim(getLocalISOString(fim));
   };
@@ -110,13 +114,13 @@ function Dashboard() {
     const endTimeFormatado = formatMySQLDate(dataFim);
 
     if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
-        setRecursos([]); 
-        return; 
+      setRecursos([]);
+      return;
     }
 
     if (isForaDeHoras) {
-        setRecursos([]);
-        return;
+      setRecursos([]);
+      return;
     }
 
     try {
@@ -140,65 +144,65 @@ function Dashboard() {
 
   // --- FUNÇÃO DE RESERVA ---
   // Função 1: Apenas valida e abre o Modal
-//  const reservarRecurso = (id, nome) => {
-//      // Validar se os campos estão preenchidos
-//      if (!dataInicio || !dataFim) {
-//        toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
-//        return;
-//      }
-//      
-//      // Converter do formato do HTML para o MySQL
-//      const startTimeFormatado = formatMySQLDate(dataInicio);
-//      const endTimeFormatado = formatMySQLDate(dataFim);
-//
-//      // Validação para evitar que o fim seja antes do início
-//      if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
-//        toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
-//        return;
-//      }
-//
-//      if (isForaDeHoras) {
-//        setRecursos([]);
-//        return;
-//      }
-//
-//      setReservaPendente({ id, nome, startTimeFormatado, endTimeFormatado });
-//      setConfirmModalOpen(true);
-//  };
-//
-//  // Função 2: Executa a chamada à API (Chamada quando o utilizador clica "Confirmar" no modal)
-//  const confirmarEfetuarReserva = async () => {
-//      if (!reservaPendente) return;
-//
-//      try {
-//        await axios.post(`${API_URL}/bookings`, {
-//          resource_id: reservaPendente.id,
-//          start_time: reservaPendente.startTimeFormatado,
-//          end_time: reservaPendente.endTimeFormatado
-//        }, {
-//          headers: { Authorization: `Bearer ${token}` }
-//        });
-//
-//        toast.success(`Reserva para ${reservaPendente.nome} efetuada com sucesso!`);
-//        
-//        // Fechar modal, limpar dados pendentes e atualizar as mesas
-//        setConfirmModalOpen(false);
-//        setReservaPendente(null);
-//        carregarRecursosComDisponibilidade(); 
-//
-//      } catch (error) {
-//        toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
-//        setConfirmModalOpen(false);
-//      }
-//  };
+  //  const reservarRecurso = (id, nome) => {
+  //      // Validar se os campos estão preenchidos
+  //      if (!dataInicio || !dataFim) {
+  //        toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
+  //        return;
+  //      }
+  //      
+  //      // Converter do formato do HTML para o MySQL
+  //      const startTimeFormatado = formatMySQLDate(dataInicio);
+  //      const endTimeFormatado = formatMySQLDate(dataFim);
+  //
+  //      // Validação para evitar que o fim seja antes do início
+  //      if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
+  //        toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
+  //        return;
+  //      }
+  //
+  //      if (isForaDeHoras) {
+  //        setRecursos([]);
+  //        return;
+  //      }
+  //
+  //      setReservaPendente({ id, nome, startTimeFormatado, endTimeFormatado });
+  //      setConfirmModalOpen(true);
+  //  };
+  //
+  //  // Função 2: Executa a chamada à API (Chamada quando o utilizador clica "Confirmar" no modal)
+  //  const confirmarEfetuarReserva = async () => {
+  //      if (!reservaPendente) return;
+  //
+  //      try {
+  //        await axios.post(`${API_URL}/bookings`, {
+  //          resource_id: reservaPendente.id,
+  //          start_time: reservaPendente.startTimeFormatado,
+  //          end_time: reservaPendente.endTimeFormatado
+  //        }, {
+  //          headers: { Authorization: `Bearer ${token}` }
+  //        });
+  //
+  //        toast.success(`Reserva para ${reservaPendente.nome} efetuada com sucesso!`);
+  //        
+  //        // Fechar modal, limpar dados pendentes e atualizar as mesas
+  //        setConfirmModalOpen(false);
+  //        setReservaPendente(null);
+  //        carregarRecursosComDisponibilidade(); 
+  //
+  //      } catch (error) {
+  //        toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
+  //        setConfirmModalOpen(false);
+  //      }
+  //  };
 
-const reservarRecurso = async (id, nome) => {
+  const reservarRecurso = async (id, nome) => {
     // 1. Validações iniciais
     if (!dataInicio || !dataFim) {
       toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
       return;
     }
-    
+
     const startTimeFormatado = formatMySQLDate(dataInicio);
     const endTimeFormatado = formatMySQLDate(dataFim);
 
@@ -224,7 +228,7 @@ const reservarRecurso = async (id, nome) => {
         });
 
         toast.success(`Reserva para ${nome} efetuada com sucesso!`);
-        carregarRecursosComDisponibilidade(); 
+        carregarRecursosComDisponibilidade();
 
       } catch (error) {
         toast.error(error.response?.data?.message || "Erro ao tentar reservar a mesa.");
@@ -239,7 +243,7 @@ const reservarRecurso = async (id, nome) => {
           <p className="text-sm text-gray-600 mb-3">
             Queres reservar a <b>{nome}</b>?
           </p>
-          
+
           <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 mb-4 space-y-1.5">
             <div className="flex justify-between items-center">
               <span className="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Início</span>
@@ -256,26 +260,26 @@ const reservarRecurso = async (id, nome) => {
               </span>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
-            <button 
-              onClick={() => { 
-                efetuarReservaApi(); 
-                closeToast(); 
-              }} 
+            <button
+              onClick={() => {
+                efetuarReservaApi();
+                closeToast();
+              }}
               className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Confirmar
             </button>
-            <button 
-              onClick={closeToast} 
+            <button
+              onClick={closeToast}
               className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors"
             >
               Cancelar
             </button>
           </div>
         </div>
-      ), 
+      ),
       {
         autoClose: false,
         closeOnClick: false,
@@ -291,7 +295,7 @@ const reservarRecurso = async (id, nome) => {
 
   // Descobrir os tipos únicos de recursos na BD
   const tiposDisponiveis = [...new Set(recursos.map(r => r.type))].filter(Boolean).sort();
-  
+
   // Função para traduzir o nome inglês da BD para português no ecrã
   const traduzirTipo = (tipo) => {
     if (tipo === 'desk') return 'Mesas';
@@ -325,7 +329,7 @@ const reservarRecurso = async (id, nome) => {
   });
 
 
-  
+
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -348,7 +352,7 @@ const reservarRecurso = async (id, nome) => {
               {getIniciais(user?.name)}
             </div>
             <span className="font-medium">{user?.name || 'Utilizador'}</span>
-            
+
             {/* Se for Admin, mostra a tag vermelha clicável */}
             {user?.role === 'admin' && (
               <Link to="/admin" title="Ir para Administração" className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors cursor-pointer">
@@ -363,21 +367,21 @@ const reservarRecurso = async (id, nome) => {
       </nav>
 
       <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
-        
+
         {/* Sidebar de Filtros (Esquerda) */}
         <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
           <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
             <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider border-b border-gray-100 pb-2">Configurar Reserva</h3>
-            
+
             {/*Componente de Escolha de Data e Hora */}
             <div className="mb-5 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
               <label className="text-xs font-semibold text-gray-700 mb-1 block">Horário</label>
-              
+
               <div className="space-y-3 mt-3">
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Início</label>
-                  <input 
-                    type="datetime-local" 
+                  <input
+                    type="datetime-local"
                     value={dataInicio}
                     onChange={(e) => {
                       setDataInicio(e.target.value);
@@ -388,8 +392,8 @@ const reservarRecurso = async (id, nome) => {
                 </div>
                 <div>
                   <label className="text-[10px] font-bold text-gray-500 uppercase">Fim</label>
-                  <input 
-                    type="datetime-local" 
+                  <input
+                    type="datetime-local"
                     value={dataFim}
                     onChange={(e) => {
                       setDataFim(e.target.value);
@@ -414,8 +418,8 @@ const reservarRecurso = async (id, nome) => {
 
                 <div className="flex flex-wrap gap-1.5">
                   {/* Atalho Resto de Hoje */}
-                  <button 
-                    onClick={() => aplicarAtalho('resto_hoje')} 
+                  <button
+                    onClick={() => aplicarAtalho('resto_hoje')}
                     className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'resto_hoje' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                   >
                     Resto de Hoje
@@ -423,15 +427,15 @@ const reservarRecurso = async (id, nome) => {
 
                   {/* Atalho Próximas X Horas (Com Input) */}
                   <div className={`flex items-center border rounded-md transition-all ${atalhoAtivo === 'proximas_h' ? 'border-blue-600 bg-blue-600' : 'border-blue-200 bg-white'}`}>
-                    <input 
-                      type="number" 
-                      value={numHoras} 
-                      min="1" 
+                    <input
+                      type="number"
+                      value={numHoras}
+                      min="1"
                       max="9"
                       onChange={(e) => {
                         const novoValor = parseInt(e.target.value) || 1;
                         setNumHoras(novoValor); // Atualiza o visual do campo
-                        
+
                         // Se o atalho já estiver clicado, recalcula as horas instantaneamente
                         if (atalhoAtivo === 'proximas_h') {
                           aplicarAtalho('proximas_h', novoValor);
@@ -439,23 +443,23 @@ const reservarRecurso = async (id, nome) => {
                       }}
                       className={`w-8 text-center text-[10px] font-bold bg-transparent outline-none ${atalhoAtivo === 'proximas_h' ? 'text-white' : 'text-blue-700'}`}
                     />
-                    <button 
-                      onClick={() => aplicarAtalho('proximas_h')} 
+                    <button
+                      onClick={() => aplicarAtalho('proximas_h')}
                       className={`text-[10px] font-bold px-2 py-1.5 rounded-r-md transition-all ${atalhoAtivo === 'proximas_h' ? 'text-white hover:bg-blue-700' : 'text-blue-700 border-l border-blue-100 hover:bg-blue-50'}`}
                     >
                       Próximas Horas
                     </button>
                   </div>
 
-                  <button 
-                    onClick={() => aplicarAtalho('amanha')} 
+                  <button
+                    onClick={() => aplicarAtalho('amanha')}
                     className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'amanha' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                   >
                     Amanhã
                   </button>
 
-                  <button 
-                    onClick={() => aplicarAtalho('semana')} 
+                  <button
+                    onClick={() => aplicarAtalho('semana')}
                     className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'semana' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
                   >
                     Esta Semana
@@ -463,10 +467,10 @@ const reservarRecurso = async (id, nome) => {
                 </div>
               </div>
             </div>
-            
+
             <div className="mb-5">
               <label className="text-xs font-semibold text-gray-600 mb-2 block">LOCALIZAÇÃO (PISO)</label>
-              <select 
+              <select
                 value={pisoFiltro}
                 onChange={(e) => setPisoFiltro(e.target.value)}
                 className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50 cursor-pointer"
@@ -485,8 +489,8 @@ const reservarRecurso = async (id, nome) => {
                 <div className="space-y-2 text-sm text-gray-700">
                   {tiposDisponiveis.map(tipo => (
                     <label key={tipo} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded transition-colors">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         checked={!tiposDesmarcados.includes(tipo)}
                         onChange={() => {
                           if (tiposDesmarcados.includes(tipo)) {
@@ -497,19 +501,20 @@ const reservarRecurso = async (id, nome) => {
                             setTiposDesmarcados(prev => [...prev, tipo]);
                           }
                         }}
-                        className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer border-gray-300" 
-                      /> 
+                        className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer border-gray-300"
+                      />
                       <span className="capitalize">{traduzirTipo(tipo)}</span>
                     </label>
                   ))}
                 </div>
               </div>
             )}
-            
+
           </div>
         </aside>
 
         {/* Área Principal (Grelha de Mesas) */}
+
         <main className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
           <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
             <div>
@@ -518,40 +523,57 @@ const reservarRecurso = async (id, nome) => {
                 A mostrar {recursosFiltrados.length} recurso(s) {pisoFiltro ? `no Piso ${pisoFiltro}` : 'em todos os pisos'}.
               </p>
             </div>
+            {/* Alternador de Vista */}
+            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
+              <button
+                onClick={() => setVista('grelha')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'grelha' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Grelha
+              </button>
+              <button
+                onClick={() => setVista('mapa')}
+                className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'mapa' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Mapa
+              </button>
+            </div>
             {/* Filtros de Estado (Botões Clicáveis) */}
             <div className="flex gap-2 text-xs font-medium">
-              <button 
+              <button
                 onClick={() => setStatusFiltro(statusFiltro === 'disponivel' ? 'todos' : 'disponivel')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'disponivel' ? 'bg-green-50 border-green-400 shadow-sm text-green-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
               >
-                <span className="w-3 h-3 rounded-full bg-green-100 border border-green-400"></span> 
+                <span className="w-3 h-3 rounded-full bg-green-100 border border-green-400"></span>
                 Disponível
               </button>
-              
-              <button 
+
+              <button
                 onClick={() => setStatusFiltro(statusFiltro === 'ocupado' ? 'todos' : 'ocupado')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'ocupado' ? 'bg-gray-100 border-gray-400 shadow-sm text-gray-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
               >
-                <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-400"></span> 
+                <span className="w-3 h-3 rounded-full bg-gray-200 border border-gray-400"></span>
                 Ocupado
               </button>
 
-              <button 
+              <button
                 onClick={() => setStatusFiltro(statusFiltro === 'manutencao' ? 'todos' : 'manutencao')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === 'manutencao' ? 'bg-red-50 border-red-400 shadow-sm text-red-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}
               >
-                <span className="w-3 h-3 rounded-full bg-red-100 border border-red-400"></span> 
+                <span className="w-3 h-3 rounded-full bg-red-100 border border-red-400"></span>
                 Manutenção
               </button>
             </div>
           </div>
+
+
 
           {erro && (
             <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm text-center font-medium">
               {erro}
             </div>
           )}
-          
+
           {/* Validação visual de horário inválido */}
           {new Date(dataInicio) >= new Date(dataFim) && (
             <div className="bg-orange-50 text-orange-700 p-8 rounded-lg mb-6 text-center border border-dashed border-orange-300">
@@ -565,15 +587,15 @@ const reservarRecurso = async (id, nome) => {
             <div className="bg-orange-50 text-orange-700 p-8 rounded-xl mb-6 text-center border border-dashed border-orange-300 animate-fade-in">
               <svg className="w-12 h-12 mx-auto mb-4 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
               <h4 className="font-bold text-lg">Fora do Horário De Escritório</h4>
-              <p className="text-sm mt-1">O escritório funciona apenas entre as <b>09:00 e as 18:00</b>.<br/>Por favor, clica nos atalhos laterais ou ajusta o horário manualmente.</p>
+              <p className="text-sm mt-1">O escritório funciona apenas entre as <b>09:00 e as 18:00</b>.<br />Por favor, clica nos atalhos laterais ou ajusta o horário manualmente.</p>
             </div>
           )}
 
           {/* Loading state enquanto a API responde */}
           {isLoading && new Date(dataInicio) < new Date(dataFim) && (
-              <div className="text-center py-12 text-gray-500 font-medium animate-pulse">
-                A verificar disponibilidade na base de dados...
-              </div>
+            <div className="text-center py-12 text-gray-500 font-medium animate-pulse">
+              A verificar disponibilidade na base de dados...
+            </div>
           )}
 
           {/* Se não houver mesas após o filtro */}
@@ -583,88 +605,122 @@ const reservarRecurso = async (id, nome) => {
             </div>
           )}
 
-          {/* As Grelhas Agrupadas por Tipo */}
-          {!isLoading && new Date(dataInicio) < new Date(dataFim) && !isForaDeHoras && recursosFiltrados.length > 0 && (
-            <div className="space-y-10"> {/* Espaçamento entre as categorias */}
-              
-              {/* 1. Descobrimos quais os "tipos" que existem na nossa lista atual filtrada */}
-              {[...new Set(recursosFiltrados.map(r => r.type))].map(tipo => {
-                
-                // 2. Filtramos apenas os recursos que pertencem a este tipo
-                const recursosDesteTipo = recursosFiltrados.filter(r => r.type === tipo);
-                
-                return (
-                  <div key={tipo} className="animate-fade-in">
-                    {/* Título da Secção (Ex: "Salas de Reunião") com contador */}
-                    <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
-                      {tipo === 'monitor' ? (
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                      ) : (
-                        <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
-                      )}
-                      {traduzirTipo(tipo)}
-                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-1">
-                        {recursosDesteTipo.length}
-                      </span>
-                    </h3>
-                    
-                    {/* Grelha apenas com os recursos deste tipo */}
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-6 gap-3">
-                      {recursosDesteTipo.map((recurso) => {
-                        const isMaintenance = recurso.status === 'maintenance';
-                        const isAlreadyBooked = recurso.is_booked === 1;
-                        const isAvailable = !isMaintenance && !isAlreadyBooked;
+          {vista === 'mapa' ? (
+            <div className="animate-fade-in space-y-4">
+              {/* SELETOR DE PISO: Permite ao utilizador mudar de planta sem usar a sidebar */}
+              <div className="flex gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 w-fit">
+                {[1, 2, 3].map(piso => (
+                  <button
+                    key={piso}
+                    onClick={() => setPisoFiltro(String(piso))}
+                    className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all
+                ${String(pisoFiltro || 1) === String(piso)
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}
+                  >
+                    Piso {piso}
+                  </button>
+                ))}
+              </div>
 
-                        return (
-                          <div 
-                            key={recurso.id} 
-                            onClick={() => {
-                                if (isMaintenance) alert('Este recurso está em manutenção.');
-                                else if (isAlreadyBooked) alert('Lamentamos, mas esta mesa já está reservada para o horário que escolheste.');
-                                else reservarRecurso(recurso.id, recurso.name);
-                            }}
-                            className={`relative p-3 rounded-xl border transition-all flex flex-col items-center text-center h-full
-                              ${isAvailable 
-                                ? 'bg-green-50/30 border-green-200 hover:border-green-400 hover:shadow-sm cursor-pointer hover:-translate-y-1' 
-                                : isAlreadyBooked
-                                ? 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed' 
-                                : 'bg-red-50/50 border-red-200 opacity-60 cursor-not-allowed'   
-                              }`}
-                          >
-                            
-                            {recurso.type === 'monitor' ? (
-                              <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
-                            ) : (
-                              <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
-                            )}
-                            
-                            <span 
-                              className={`font-bold text-xs ${isAvailable ? 'text-gray-800' : 'text-gray-500'} leading-tight truncate w-full px-1`} 
-                              title={recurso.name}
-                            >
-                              {recurso.name}
-                            </span>
-                            
-                            <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                              Piso {recurso.floor || '?'}
-                            </span>
+              {/* CONTENTOR DO MAPA */}
+              <div className="border border-gray-100 rounded-xl overflow-hidden shadow-inner bg-gray-50">
+                <PlantaEditor
+                  recursos={recursosFiltrados}
+                  modoAdmin={false}
+                  reservarRecurso={reservarRecurso} 
+                  pisoAtual={pisoFiltro || 1}
+                />
+              </div>
+            </div>
+          ) : (
+            <div>
+              {/* As Grelhas Agrupadas por Tipo */}
+              {!isLoading && new Date(dataInicio) < new Date(dataFim) && !isForaDeHoras && recursosFiltrados.length > 0 && (
+                <div className="space-y-10"> {/* Espaçamento entre as categorias */}
 
-                            <span className={`mt-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
+                  {/* 1. Descobrimos quais os "tipos" que existem na nossa lista atual filtrada */}
+                  {[...new Set(recursosFiltrados.map(r => r.type))].map(tipo => {
+
+                    // 2. Filtramos apenas os recursos que pertencem a este tipo
+                    const recursosDesteTipo = recursosFiltrados.filter(r => r.type === tipo);
+
+                    return (
+                      <div key={tipo} className="animate-fade-in">
+                        {/* Título da Secção (Ex: "Salas de Reunião") com contador */}
+                        <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2 border-b border-gray-100 pb-2">
+                          {tipo === 'monitor' ? (
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
+                          )}
+                          {traduzirTipo(tipo)}
+                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full ml-1">
+                            {recursosDesteTipo.length}
+                          </span>
+                        </h3>
+
+                        {/* Grelha apenas com os recursos deste tipo */}
+                        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-6 gap-3">
+                          {recursosDesteTipo.map((recurso) => {
+                            const isMaintenance = recurso.status === 'maintenance';
+                            const isAlreadyBooked = recurso.is_booked === 1;
+                            const isAvailable = !isMaintenance && !isAlreadyBooked;
+
+                            return (
+                              <div
+                                key={recurso.id}
+                                onClick={() => {
+                                  if (isMaintenance) alert('Este recurso está em manutenção.');
+                                  else if (isAlreadyBooked) alert('Lamentamos, mas esta mesa já está reservada para o horário que escolheste.');
+                                  else reservarRecurso(recurso.id, recurso.name);
+                                }}
+                                className={`relative p-3 rounded-xl border transition-all flex flex-col items-center text-center h-full
+                              ${isAvailable
+                                    ? 'bg-green-50/30 border-green-200 hover:border-green-400 hover:shadow-sm cursor-pointer hover:-translate-y-1'
+                                    : isAlreadyBooked
+                                      ? 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed'
+                                      : 'bg-red-50/50 border-red-200 opacity-60 cursor-not-allowed'
+                                  }`}
+                              >
+
+                                {recurso.type === 'monitor' ? (
+                                  <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                                ) : (
+                                  <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-green-600' : isAlreadyBooked ? 'text-gray-400' : 'text-red-500'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
+                                )}
+
+                                <span
+                                  className={`font-bold text-xs ${isAvailable ? 'text-gray-800' : 'text-gray-500'} leading-tight truncate w-full px-1`}
+                                  title={recurso.name}
+                                >
+                                  {recurso.name}
+                                </span>
+
+                                <span className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                                  Piso {recurso.floor || '?'}
+                                </span>
+
+                                <span className={`mt-2 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full
                               ${isAvailable ? 'bg-green-100 text-green-700' : isAlreadyBooked ? 'bg-gray-100 text-gray-700' : 'bg-red-100 text-red-700'}`}>
-                              {isAvailable ? 'Livre' : isAlreadyBooked ? 'Ocupada' : 'Avariada'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
+                                  {isAvailable ? 'Livre' : isAlreadyBooked ? 'Ocupada' : 'Avariada'}
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
+
         </main>
-      </div>
+      </div >
+
 
       {/* MODAL DE CONFIRMAÇÃO DE RESERVA */}
       {/*{confirmModalOpen && reservaPendente && (
@@ -707,7 +763,7 @@ const reservarRecurso = async (id, nome) => {
       )}*/}
 
 
-    </div>
+    </div >
   );
 }
 
