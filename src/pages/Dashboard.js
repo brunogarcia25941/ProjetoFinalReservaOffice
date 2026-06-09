@@ -251,7 +251,7 @@ function Dashboard() {
                           )}
                           <span className="font-bold text-xs text-gray-800 truncate w-full mb-1">{recurso.name}</span>
                           <span className="text-[10px] text-gray-400">Piso {recurso.floor}</span>
-                          <span className={`mt-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${isAvailable ? 'bg-success-light text-success-hover' : 'bg-gray-100 text-gray-700'}`}>{isAvailable ? 'Livre' : 'Ocupada'}</span>
+                          <span className={`mt-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${isAvailable ? 'bg-success-light text-success-hover' : isMaintenance ? 'bg-admin-light text-admin' : 'bg-gray-100 text-gray-700'}`}>{isAvailable ? 'Livre' : isMaintenance ? 'Em Manutenção' : 'Ocupada'}</span>
                         </div>
                       );
                     })}
