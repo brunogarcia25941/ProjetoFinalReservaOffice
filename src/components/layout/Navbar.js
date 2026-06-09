@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
 
 function Navbar({ user, logout, isAdmin = false }) {
   const location = useLocation();
+  const { selectedOffice, setSelectedOffice, offices } = useContext(AuthContext);
 
   const getIniciais = (nome) => {
     if (!nome) return 'U';
@@ -23,19 +25,44 @@ function Navbar({ user, logout, isAdmin = false }) {
 
   return (
     <nav className={navClass}>
-      <div className="flex items-center gap-2">
-        <div className={isAdmin ? "bg-admin p-1.5 rounded-lg" : "bg-primary p-1.5 rounded-lg"}>
-          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            {isAdmin ? (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
-            ) : (
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-            )}
-          </svg>
+      <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <div className={isAdmin ? "bg-admin p-1.5 rounded-lg" : "bg-primary p-1.5 rounded-lg"}>
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              {isAdmin ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+              )}
+            </svg>
+          </div>
+          <span className={`text-xl font-bold ${textClass}`}>
+            {isAdmin ? "Administração - Reserva Office" : "Reserva Office"}
+          </span>
         </div>
-        <span className={`text-xl font-bold ${textClass}`}>
-          {isAdmin ? "Administração - Reserva Office" : "Reserva Office"}
-        </span>
+
+        {offices && offices.length > 0 && (
+          <div className="flex items-center gap-1.5 ml-2">
+            <svg className={`w-4 h-4 ${isAdmin ? "text-gray-400" : "text-gray-500"}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+            </svg>
+            <select
+              value={selectedOffice}
+              onChange={(e) => setSelectedOffice(e.target.value)}
+              className={`text-xs font-semibold rounded-lg border px-2.5 py-1 focus:outline-none transition-all cursor-pointer ${
+                isAdmin 
+                  ? "bg-gray-800 border-gray-700 text-gray-200 focus:border-admin"
+                  : "bg-gray-50 border-gray-200 text-gray-700 focus:border-primary"
+              }`}
+            >
+              {offices.map((office) => (
+                <option key={office} value={office} className={isAdmin ? "bg-gray-900" : "bg-white"}>
+                  {office}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       <div className={`flex items-center gap-4 text-sm font-medium ${linkClass}`}>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-function UserForm({ user, onSubmit, onChange, picklists, isEdit = false }) {
+function UserForm({ user, onSubmit, onChange, picklists, offices = [], isEdit = false }) {
   return (
     <form onSubmit={onSubmit} className="space-y-4">
       <div>
@@ -47,7 +47,7 @@ function UserForm({ user, onSubmit, onChange, picklists, isEdit = false }) {
           <select
             value={user.role}
             onChange={(e) => onChange({ ...user, role: e.target.value })}
-            className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-blue-500 focus:border-blue-500"
+            className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
           >
             {picklists.roles.map(role => (
               <option key={role.id} value={role.id}>{role.label}</option>
@@ -55,6 +55,20 @@ function UserForm({ user, onSubmit, onChange, picklists, isEdit = false }) {
           </select>
         </div>
       )}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Escritório Base (Opcional)</label>
+        <select
+          value={user.home_office_id || ''}
+          onChange={(e) => onChange({ ...user, home_office_id: e.target.value ? parseInt(e.target.value) : null })}
+          className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-blue-500 focus:border-blue-500 bg-white"
+        >
+          <option value="">Nenhum (Global)</option>
+          {offices.map(office => (
+            <option key={office.id} value={office.id}>{office.name}</option>
+          ))}
+        </select>
+      </div>
 
       <button 
         type="submit" 

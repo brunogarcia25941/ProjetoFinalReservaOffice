@@ -1,4 +1,4 @@
-import React, { createContext, useState } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
 import { useQuery } from '@tanstack/react-query';
 
@@ -23,18 +23,61 @@ export function AuthProvider({ children }) {
     return savedToken ? decodeToken(savedToken) : null;
   });
 
+  // Estado para múltiplos escritórios (offices/buildings)
+  const [selectedOffice, setSelectedOfficeState] = useState(() => {
+    return localStorage.getItem('selectedOffice') || '';
+  });
+  const [offices, setOffices] = useState([]);
+
   // REACT QUERY: Vai buscar os dados à BD
   useQuery({
     queryKey: ['userData', token], // Re-executa se o token mudar
     queryFn: async () => {
       const response = await api.get('/auth/me');
-      setUser(prev => ({ ...prev, ...response.data }));
-      return response.data;
+      const data = response.data;
+      setUser(prev => ({ ...prev, ...data }));
+      
+      // Se não houver escritório no localStorage, usa o do perfil do utilizador
+      const storedOffice = localStorage.getItem('selectedOffice');
+      if (!storedOffice && data.home_office) {
+        setSelectedOfficeState(data.home_office);
+        localStorage.setItem('selectedOffice', data.home_office);
+      }
+      
+      return data;
     },
     enabled: !!token, // Só executa se houver um token
     staleTime: Infinity, // Evita pedidos constantes
     retry: false
   });
+
+  // REACT QUERY: Obter escritórios (buildings) disponíveis
+  useQuery({
+    queryKey: ['escritoriosMenu', token],
+    queryFn: async () => {
+      const response = await api.get('/offices');
+      const activeOffices = response.data.filter(o => o.active).map(o => o.name);
+      setOffices(activeOffices);
+      
+      if (activeOffices.length > 0) {
+        const storedOffice = localStorage.getItem('selectedOffice');
+        if (!storedOffice || !activeOffices.includes(storedOffice)) {
+          setSelectedOfficeState(activeOffices[0]);
+          localStorage.setItem('selectedOffice', activeOffices[0]);
+        } else if (selectedOffice !== storedOffice) {
+          setSelectedOfficeState(storedOffice);
+        }
+      }
+      return activeOffices;
+    },
+    enabled: !!token,
+    retry: false
+  });
+
+  const setSelectedOffice = (office) => {
+    setSelectedOfficeState(office);
+    localStorage.setItem('selectedOffice', office);
+  };
 
   const login = async (email, password) => {
     try {
@@ -72,7 +115,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, login, logout, selectedOffice, setSelectedOffice, offices }}>
       {children}
     </AuthContext.Provider>
   );

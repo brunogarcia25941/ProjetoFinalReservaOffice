@@ -9,6 +9,7 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
             <th className="px-6 py-4 font-semibold">ID</th>
             <th className="px-6 py-4 font-semibold">Nome Completo</th>
             <th className="px-6 py-4 font-semibold">Email</th>
+            <th className="px-6 py-4 font-semibold">Escritório Base</th>
             <th className="px-6 py-4 font-semibold">Cargo (Role)</th>
             <th className="px-6 py-4 font-semibold text-center">Ações</th>
           </tr>
@@ -16,7 +17,7 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
         <tbody className="divide-y divide-gray-200">
           {users.length === 0 ? (
             <tr>
-              <td colSpan="5" className="px-6 py-8 text-center text-gray-500">A carregar colaboradores...</td>
+              <td colSpan="6" className="px-6 py-8 text-center text-gray-500">A carregar colaboradores...</td>
             </tr>
           ) : (
             users.map((user) => (
@@ -24,6 +25,7 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
                 <td className="px-6 py-4 font-mono text-xs text-gray-400">#{user.id}</td>
                 <td className="px-6 py-4 font-semibold text-gray-800">{user.name}</td>
                 <td className="px-6 py-4">{user.email}</td>
+                <td className="px-6 py-4 text-xs font-semibold text-gray-700">{user.home_office || 'Global'}</td>
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border 
                       ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :

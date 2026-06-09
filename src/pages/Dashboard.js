@@ -23,7 +23,7 @@ function Dashboard() {
   const [numHoras, setNumHoras] = useState(2);
   const [vista, setVista] = useState('grelha');
 
-  const { logout, token, user } = useContext(AuthContext);
+  const { logout, token, user, selectedOffice } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -99,6 +99,10 @@ function Dashboard() {
     carregarRecursosComDisponibilidade();
   }, [carregarRecursosComDisponibilidade]);
 
+  useEffect(() => {
+    setPisoFiltro('');
+  }, [selectedOffice]);
+
   const reservarRecurso = async (id, nome) => {
     if (!dataInicio || !dataFim) {
       toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
@@ -144,14 +148,15 @@ function Dashboard() {
     ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
   };
 
-  const pisosDisponiveis = [...new Set(recursos.map(r => r.floor))].filter(Boolean).sort();
-  const tiposDisponiveis = [...new Set(recursos.map(r => r.type))].filter(Boolean).sort();
+  const recursosDoOffice = recursos.filter(r => !selectedOffice || r.building === selectedOffice);
+  const pisosDisponiveis = [...new Set(recursosDoOffice.map(r => r.floor))].filter(Boolean).sort();
+  const tiposDisponiveis = [...new Set(recursosDoOffice.map(r => r.type))].filter(Boolean).sort();
   const traduzirTipo = (tipo) => {
     const traducoes = { desk: 'Mesas', room: 'Salas de Reunião', monitor: 'Monitores' };
     return traducoes[tipo] || tipo;
   };
 
-  const recursosFiltrados = recursos.filter((r) => {
+  const recursosFiltrados = recursosDoOffice.filter((r) => {
     const passaPiso = pisoFiltro === '' || String(r.floor) === String(pisoFiltro);
     const isMaintenance = r.status === 'maintenance';
     const isAlreadyBooked = r.is_booked === 1;
@@ -221,12 +226,12 @@ function Dashboard() {
           {vista === 'mapa' ? (
             <div className="animate-fade-in space-y-4">
               <div className="flex gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 w-fit">
-                {[1, 2, 3].map(piso => (
-                  <button key={piso} onClick={() => setPisoFiltro(String(piso))} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${String(pisoFiltro || 1) === String(piso) ? 'bg-primary text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Piso {piso}</button>
+                {(pisosDisponiveis.length > 0 ? pisosDisponiveis : [1, 2, 3]).map(piso => (
+                  <button key={piso} onClick={() => setPisoFiltro(String(piso))} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${String(pisoFiltro || pisosDisponiveis[0] || 1) === String(piso) ? 'bg-primary text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Piso {piso}</button>
                 ))}
               </div>
               <div className="border border-gray-100 rounded-xl overflow-hidden shadow-inner bg-gray-50">
-                <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || 1} />
+                <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || pisosDisponiveis[0] || 1} />
               </div>
             </div>
           ) : (

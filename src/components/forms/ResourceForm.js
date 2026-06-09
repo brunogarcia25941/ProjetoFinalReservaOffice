@@ -41,6 +41,18 @@ function ResourceForm({ resource, onSubmit, onChange, picklists, isEdit = false 
               onChange={(e) => onChange({ ...resource, floor: e.target.value })} 
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Edifício / Escritório</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Edifício Principal, Lisboa, Porto" 
+              value={resource.building || ''}
+              className="w-full border border-gray-300 p-3 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" 
+              required
+              onChange={(e) => onChange({ ...resource, building: e.target.value })} 
+            />
+          </div>
         </>
       ) : (
         <div>

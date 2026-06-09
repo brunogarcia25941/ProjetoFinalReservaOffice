@@ -8,6 +8,7 @@ function ResourceTable({ resources, onEdit, onDelete }) {
           <tr>
             <th className="px-6 py-4 font-semibold">Nome</th>
             <th className="px-6 py-4 font-semibold">Tipo</th>
+            <th className="px-6 py-4 font-semibold">Edifício</th>
             <th className="px-6 py-4 font-semibold">Piso</th>
             <th className="px-6 py-4 font-semibold">Estado</th>
             <th className="px-6 py-4 font-semibold text-center">Ações</th>
@@ -18,6 +19,7 @@ function ResourceTable({ resources, onEdit, onDelete }) {
             <tr key={r.id} className="hover:bg-gray-50">
               <td className="px-6 py-4 font-semibold">{r.name}</td>
               <td className="px-6 py-4 capitalize">{r.type}</td>
+              <td className="px-6 py-4">{r.building || 'Edifício Principal'}</td>
               <td className="px-6 py-4">Piso {r.floor}</td>
               <td className="px-6 py-4">
                 <span className={`px-2 py-1 text-xs font-bold rounded-full ${r.status === 'active' ? 'bg-success-light text-success' : 'bg-admin-light text-admin'}`}>
