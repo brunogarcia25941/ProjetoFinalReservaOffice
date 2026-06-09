@@ -1,16 +1,41 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Text, Group, Image } from 'react-konva';
 
-function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual }) {
+function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual, modoAdmin = false, reservarRecurso }) {
   // Referência para o Palco (Stage) do Konva, necessária para capturar a posição do ponteiro do rato
   const stageRef = useRef(null);
-  
+
   // Estado para armazenar temporariamente o ID do recurso que está a ser arrastado da lista lateral
   const [draggedResourceId, setDraggedResourceId] = useState(null);
 
 
   // Estado para guardar o objeto da imagem carregada
   const [imageObj, setImageObj] = useState(null);
+
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+
+  // Função para gerir o zoom com a roda do rato
+  const handleWheel = (e) => {
+    e.evt.preventDefault();
+    const scaleBy = 1.1; // Velocidade do zoom
+    const stage = e.target.getStage();
+    const oldScale = stage.scaleX();
+    const mousePointTo = {
+      x: stage.getPointerPosition().x / oldScale - stage.x() / oldScale,
+      y: stage.getPointerPosition().y / oldScale - stage.y() / oldScale,
+    };
+
+    const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
+    // Limites de zoom (min 0.5x, max 3x)
+    if (newScale < 0.5 || newScale > 3) return;
+
+    setScale(newScale);
+    setPosition({
+      x: (stage.getPointerPosition().x / newScale - mousePointTo.x) * newScale,
+      y: (stage.getPointerPosition().y / newScale - mousePointTo.y) * newScale,
+    });
+  };
 
   useEffect(() => {
     const img = new window.Image();
@@ -41,73 +66,92 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual 
     setRecursos(recursosAnteriores =>
       recursosAnteriores.map(rec =>
         rec.id === draggedResourceId
-          ? { 
-              ...rec, 
-              pos_x: snappedX, 
-              pos_y: snappedY 
-            }
+          ? {
+            ...rec,
+            pos_x: snappedX,
+            pos_y: snappedY
+          }
           : rec
       )
     );
 
     // 2. Dispara o pedido HTTP PUT para gravar as coordenadas arredondadas na base de dados
     salvarCoordenadasNaBD(draggedResourceId, snappedX, snappedY);
-    
+
     // Limpa o ID do recurso arrastado
     setDraggedResourceId(null);
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      
-      {/* BARRA LATERAL: Lista de recursos que ainda NÃO têm coordenadas atribuídas */}
-      <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-[500px] overflow-y-auto">
-        <h4 className="font-semibold text-gray-700 mb-3 text-sm border-b pb-2">Mesas / Salas Disponíveis</h4>
-        <div className="space-y-2">
-          
-          {/* Filtramos a lista exibindo apenas os recursos onde pos_x é nulo ou indefinido */}
-          {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).map(recurso => (
-            <div
-              key={recurso.id}
-              draggable // Permite que o elemento seja arrastado
-              onDragStart={() => handleStageDragStart(recurso.id)}
-              className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors flex items-center justify-between"
-            >
-              <div>
-                <span className="font-medium text-gray-800 block text-sm">{recurso.name}</span>
-                <span className="text-xs text-gray-400 capitalize">{recurso.type}</span>
-              </div>
-              <div className="bg-blue-50 text-blue-600 p-1 rounded">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
-                </svg>
-              </div>
-            </div>
-          ))}
-          
-          {/* Mensagem caso já não existam recursos por posicionar */}
-          {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).length === 0 && (
-            <p className="text-xs text-gray-400 text-center py-4">Todos os recursos já se encontram posicionados no mapa.</p>
-          )}
-        </div>
-      </div>
+    <div className={modoAdmin ? "grid grid-cols-1 lg:grid-cols-4 gap-6" : "w-full"}>
 
-      {/* CONTENTOR DO MAPA: Zona onde o Stage do Konva vai estar */}
-      <div 
-        className="lg:col-span-3 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px]"
+      {/* BARRA LATERAL: Lista de recursos que ainda NÃO têm coordenadas atribuídas */}
+      {modoAdmin && (
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-[500px] overflow-y-auto">
+          <h4 className="font-semibold text-gray-700 mb-3 text-sm border-b pb-2">Mesas / Salas Disponíveis</h4>
+          <div className="space-y-2">
+
+            {/* Filtramos a lista exibindo apenas os recursos onde pos_x é nulo ou indefinido */}
+            {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).map(recurso => (
+              <div
+                key={recurso.id}
+                draggable // Permite que o elemento seja arrastado
+                onDragStart={() => handleStageDragStart(recurso.id)}
+                className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors flex items-center justify-between"
+              >
+                <div>
+                  <span className="font-medium text-gray-800 block text-sm">{recurso.name}</span>
+                  <span className="text-xs text-gray-400 capitalize">{recurso.type}</span>
+                </div>
+                <div className="bg-blue-50 text-blue-600 p-1 rounded">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
+                  </svg>
+                </div>
+              </div>
+            ))}
+
+            {/* Mensagem caso já não existam recursos por posicionar */}
+            {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).length === 0 && (
+              <p className="text-xs text-gray-400 text-center py-4">Todos os recursos já se encontram posicionados no mapa.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* CONTENTOR DO MAPA: Stage do Konva */}
+      <div
+        className={modoAdmin ? "lg:col-span-3 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px] " : "w-full  rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px]"}
         onDragOver={(e) => e.preventDefault()} // Obrigatório para permitir que o evento onDrop funcione
         onDrop={handleStageDrop}
       >
         {/* Stage define a área visível e o sistema de coordenadas do Canvas (800x500 pixéis por agora) */}
-        <Stage width={800} height={500} ref={stageRef} className="bg-white shadow-inner">
+        <Stage
+          width={800}
+          height={500}
+          ref={stageRef}
+          className="bg-white shadow-inner cursor-grab active:cursor-grabbing"
+          scaleX={scale}
+          scaleY={scale}
+          x={position.x}
+          y={position.y}
+          onWheel={handleWheel}
+          draggable={!draggedResourceId} // Só arrasta o mapa se não estivermos a posicionar um recurso
+          onDragEnd={(e) => {
+            // Se o arraste vier do Stage (fundo), guarda a nova posição do "pan"
+            if (e.target === stageRef.current) {
+              setPosition({ x: e.target.x(), y: e.target.y() });
+            }
+          }}
+        >
           {/* O Konva exige que todos os elementos visuais estejam dentro de um Layer (Camada) */}
           <Layer>
             {/* Imagem de fundo da planta */}
             {imageObj && (
               <Image
                 image={imageObj}
-                width={800} 
-                height={500} 
+                width={800}
+                height={500}
                 opacity={0.5} // torna a planta mais clara para destacar as mesas etc.
               />
             )}
@@ -119,12 +163,13 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual 
                 x={recurso.pos_x}
                 y={recurso.pos_y}
                 rotation={recurso.rotation || 0}
-                draggable // Torna o elemento arrastável livremente dentro do próprio Canvas
-                
+                draggable={modoAdmin} // Torna o elemento arrastável livremente dentro do próprio Canvas apenas para o modo admin
+
                 // Evento disparado quando o utilizador larga o objeto após arrastá-lo no mapa
                 onDragEnd={(e) => {
+                  if (!modoAdmin) return;
                   const grid = 25; // tamanho da grelha
-                  const node=e.target;
+                  const node = e.target;
                   // Captura as novas coordenadas X e Y relativas ao Stage
                   const novoX = Math.round(node.x() / grid) * grid;
                   const novoY = Math.round(node.y() / grid) * grid;
@@ -136,51 +181,78 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual 
                   const rotacaoAtual = recurso.rotation || 0;
                   salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
                 }}
+
+                onClick={() => {
+                  if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                    reservarRecurso(recurso.id, recurso.name);
+                  }
+                }}
+
+                // Mudar o cursor para "pointer" ao passar o rato
+                onMouseEnter={(e) => {
+                  const container = e.target.getStage().container();
+                  if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                    container.style.cursor = 'pointer';
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  e.target.getStage().container().style.cursor = 'default';
+                }}
               >
                 {/* Formato físico da mesa/sala (Retângulo azul com cantos arredondados por agora) */}
-                <Rect 
-                  width={recurso.type === 'room' ? 120 : 60} 
-                  height={recurso.type === 'room' ? 80 : 40} 
-                  fill={recurso.status === 'active' ? '#2563eb' : '#94a3b8'} 
-                  cornerRadius={4} 
-                  shadowBlur={5} 
-                  shadowOpacity={0.2} 
+                <Rect
+                  width={recurso.type === 'room' ? 120 : 60}
+                  height={recurso.type === 'room' ? 80 : 40}
+                  // Lógica de cores: Vermelho se ocupado, Cinza se manutenção, Azul se livre
+                  fill={recurso.status === 'maintenance' ? '#94a3b8' : (recurso.is_booked ? '#ef4444' : '#2563eb')}
+                  cornerRadius={4}
+                  shadowBlur={5}
+                  shadowOpacity={0.2}
+                  stroke={recurso.is_booked ? '#b91c1c' : '#1e40af'}
+                  strokeWidth={1}
                 />
-                
+
                 {/* Texto centralizado contendo o identificador ou nome do recurso */}
-                <Text 
-                  text={recurso.name} 
-                  fontSize={10} 
-                  fill="white" 
-                  width={60} 
+                <Text
+                  text={recurso.name}
+                  fontSize={10}
+                  fill="white"
+                  listening={false}
+                  width={recurso.type === 'room' ? 120 : 60}
+                  height={recurso.type === 'room' ? 80 : 40}
                   padding={5}
                   align="center"
                   verticalAlign="middle"
                   height={40}
                 />
-                {/* BOTÃO RODAR (Círculo azul claro no canto inferior direito) */}
-                <Group
-                  x={45} y={25}
-                  onClick={() => {
-                    const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
-                    salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
-                  }}
-                >
-                  <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
-                  <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
-                </Group>
+                {modoAdmin && (
+                  <>
+                    {/* BOTÃO RODAR (Círculo azul claro no canto inferior direito) */}
+                    <Group
+                      x={45} y={25}
+                      onClick={() => {
+                        const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
+                        salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
+                      }}
+                    >
+                      <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
+                      <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
+                    </Group>
 
-                {/* BOTÃO REMOVER (Círculo branco com borda vermelha no topo direito) */}
-                <Group
-                  x={45} y={-5}
-                  onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
-                >
-                  <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
-                  <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
-                </Group>
+                    {/* BOTÃO REMOVER (Círculo branco com borda vermelha no topo direito) */}
+                    <Group
+                      x={45} y={-5}
+                      onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
+                    >
+                      <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
+                      <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                    </Group>
+                  </>
+                )}
               </Group>
+
             ))}
-            
+
           </Layer>
         </Stage>
       </div>

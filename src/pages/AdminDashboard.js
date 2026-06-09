@@ -497,6 +497,7 @@ function AdminDashboard() {
                     setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)}
                     salvarCoordenadasNaBD={salvarCoordenadasNaBD}
                     pisoAtual={pisoSelecionado} // Passamos o piso para o editor
+                    modoAdmin={true}
                   />
                 </div>
               )}
