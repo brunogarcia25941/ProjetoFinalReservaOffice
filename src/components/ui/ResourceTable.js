@@ -20,20 +20,20 @@ function ResourceTable({ resources, onEdit, onDelete }) {
               <td className="px-6 py-4 capitalize">{r.type}</td>
               <td className="px-6 py-4">Piso {r.floor}</td>
               <td className="px-6 py-4">
-                <span className={`px-2 py-1 text-xs font-bold rounded-full ${r.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                <span className={`px-2 py-1 text-xs font-bold rounded-full ${r.status === 'active' ? 'bg-success-light text-success' : 'bg-admin-light text-admin'}`}>
                   {r.status}
                 </span>
               </td>
               <td className="px-6 py-4 text-center flex justify-center gap-2">
                 <button 
                   onClick={() => onEdit(r)} 
-                  className="bg-blue-50 text-blue-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-blue-200"
+                  className="bg-primary-soft text-primary px-3 py-1.5 rounded-lg text-xs font-bold border border-primary-light"
                 >
                   Editar
                 </button>
                 <button 
                   onClick={() => onDelete(r.id, r.name)} 
-                  className="bg-red-50 text-red-700 px-3 py-1.5 rounded-lg text-xs font-bold border border-red-200"
+                  className="bg-admin-soft text-admin px-3 py-1.5 rounded-lg text-xs font-bold border border-admin-light"
                 >
                   Eliminar
                 </button>

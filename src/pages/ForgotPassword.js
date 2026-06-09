@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../api/axiosConfig';
 import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import API_URL from '../config';
 
 function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -13,7 +12,7 @@ function ForgotPassword() {
     setCarregando(true);
 
     try {
-      const response = await axios.post(`${API_URL}/auth/forgot-password`, { email });
+      const response = await api.post(`/auth/forgot-password`, { email });
       toast.success(response.data.message || 'Email de recuperação enviado!');
     } catch (error) {
       toast.error(error.response?.data?.message || 'Erro ao pedir a recuperação.');

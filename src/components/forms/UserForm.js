@@ -35,8 +35,8 @@ function UserForm({ user, onSubmit, onChange, picklists, isEdit = false }) {
             onChange={(e) => onChange({ ...user, password: e.target.value })} 
             className="w-full border border-gray-300 p-2 rounded text-sm focus:ring-blue-500 focus:border-blue-500" 
             required 
-            minLength="6"
-            placeholder="Mínimo 6 caracteres"
+            minLength="8"
+            placeholder="Mínimo 8 caracteres (Maiúscula, Minúscula, Número)"
           />
         </div>
       )}
@@ -58,7 +58,7 @@ function UserForm({ user, onSubmit, onChange, picklists, isEdit = false }) {
 
       <button 
         type="submit" 
-        className="w-full bg-blue-600 text-white py-2.5 rounded-lg font-medium hover:bg-blue-700 transition-colors mt-4"
+        className="w-full bg-primary text-white py-2.5 rounded-lg font-medium hover:bg-primary-hover transition-colors mt-4"
       >
         {isEdit ? "Salvar Alterações" : "Criar Conta"}
       </button>

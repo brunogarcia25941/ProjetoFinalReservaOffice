@@ -59,7 +59,7 @@ function ResourceForm({ resource, onSubmit, onChange, picklists, isEdit = false 
 
       <button 
         type="submit" 
-        className="w-full bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 mt-2"
+        className="w-full bg-primary text-white font-bold py-3 rounded-xl hover:bg-primary-hover shadow-lg shadow-primary-light transition-all active:scale-95 mt-2"
       >
         {isEdit ? "Salvar Alterações" : "Criar Recurso"}
       </button>

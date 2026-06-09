@@ -27,14 +27,14 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 text-xs font-bold uppercase tracking-wider rounded-full border 
                       ${user.role === 'admin' ? 'bg-purple-50 text-purple-700 border-purple-200' :
-                      'bg-blue-50 text-blue-700 border-blue-200'}`}>
+                      'bg-primary-soft text-primary border-primary-light'}`}>
                     {picklists?.roles?.find(r => r.id === user.role)?.label || user.role}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-center flex justify-center gap-2">
                   <button
                     onClick={() => onEdit(user)}
-                    className="bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 hover:border-blue-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
+                    className="bg-primary-soft text-primary border border-primary-light hover:bg-primary-light hover:border-primary transition-all font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
@@ -44,7 +44,7 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
 
                   <button
                     onClick={() => onDelete(user.id, user.name)}
-                    className="bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 hover:border-red-300 font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
+                    className="bg-admin-soft text-admin border border-admin-light hover:bg-admin-light hover:border-admin transition-all font-bold px-3 py-1.5 rounded-lg text-xs transition-colors flex items-center gap-1.5"
                   >
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>

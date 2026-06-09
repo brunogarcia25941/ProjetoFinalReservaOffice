@@ -18,7 +18,7 @@ function Modal({ isOpen, onClose, title, children, maxWidth = "max-w-md", icon }
         {title && (
           <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             {icon && (
-              <span className="p-2 bg-blue-50 rounded-lg">
+              <span className="p-2 bg-primary-soft rounded-lg">
                 {icon}
               </span>
             )}

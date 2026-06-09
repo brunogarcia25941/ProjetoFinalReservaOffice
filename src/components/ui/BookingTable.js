@@ -37,7 +37,7 @@ function BookingTable({ bookings }) {
                   <td className="px-6 py-4">{dataInicio}</td>
                   <td className="px-6 py-4">{dataFim}</td>
                   <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ativa ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ativa ? 'bg-success-light text-success-hover' : 'bg-gray-100 text-gray-700'}`}>
                       {ativa ? 'Confirmada' : 'Cancelada'}
                     </span>
                   </td>

@@ -1,9 +1,8 @@
 import React, { useState, useContext } from 'react';
-import axios from 'axios';
+import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import API_URL from '../config';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import PlantaEditor from '../components/PlantaEditor';
 import Navbar from '../components/layout/Navbar';
@@ -34,25 +33,25 @@ function AdminDashboard() {
   // Queries
   const { data: utilizadores = [], isError: isErrorUsers } = useQuery({
     queryKey: ['utilizadores'],
-    queryFn: () => axios.get(`${API_URL}/admin/users`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    queryFn: () => api.get(`/admin/users`).then(res => res.data),
     enabled: !!token
   });
 
   const { data: todasReservas = [] } = useQuery({
     queryKey: ['reservas'],
-    queryFn: () => axios.get(`${API_URL}/bookings/all`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    queryFn: () => api.get(`/bookings/all`).then(res => res.data),
     enabled: !!token
   });
 
   const { data: recursos = [] } = useQuery({
     queryKey: ['recursos'],
-    queryFn: () => axios.get(`${API_URL}/resources`, { headers: { Authorization: `Bearer ${token}` } }).then(res => res.data),
+    queryFn: () => api.get(`/resources`).then(res => res.data),
     enabled: !!token
   });
 
   const { data: picklists = { roles: [], resourceTypes: [], resourceStatuses: [] } } = useQuery({
     queryKey: ['picklists'],
-    queryFn: () => axios.get(`${API_URL}/picklists`).then(res => res.data)
+    queryFn: () => api.get(`/picklists`).then(res => res.data)
   });
 
   const handleLogout = () => {
@@ -64,20 +63,27 @@ function AdminDashboard() {
   const handleRegistarUtilizador = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/auth/register`, novoUser);
+      await api.post(`/auth/register`, novoUser);
       toast.success("Utilizador registado!");
       setNovoUser({ name: '', email: '', password: '' });
       queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
       setIsModalOpen(false);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Erro ao registar.");
+      const data = error.response?.data;
+      if (data?.errors && data.errors.length > 0) {
+        // Exibe o primeiro erro de validação detalhado
+        const firstErrorKey = Object.keys(data.errors[0])[0];
+        toast.error(data.errors[0][firstErrorKey]);
+      } else {
+        toast.error(data?.message || "Erro ao registar.");
+      }
     }
   };
 
   const handleEliminarUtilizador = async (id, nome) => {
     const efetuarEliminacao = async () => {
       try {
-        await axios.delete(`${API_URL}/admin/users/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await api.delete(`/admin/users/${id}`);
         toast.info("Utilizador removido.");
         queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
       } catch (error) {
@@ -90,7 +96,7 @@ function AdminDashboard() {
         <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Utilizador</h4>
         <p className="text-sm text-gray-600 mb-4">Tens a certeza que queres eliminar <b>{nome}</b>?</p>
         <div className="flex gap-2">
-          <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Eliminar</button>
+          <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-admin hover:bg-admin-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Eliminar</button>
           <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors">Cancelar</button>
         </div>
       </div>
@@ -100,7 +106,7 @@ function AdminDashboard() {
   const handleActualizarUtilizador = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API_URL}/admin/users/${editingUser.id}`, editingUser, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/admin/users/${editingUser.id}`, editingUser);
       toast.success("Dados atualizados!");
       queryClient.invalidateQueries({ queryKey: ['utilizadores'] });
       setIsEditModalOpen(false);
@@ -113,7 +119,7 @@ function AdminDashboard() {
   const handleRegistarRecurso = async (e) => {
     e.preventDefault();
     try {
-      await axios.post(`${API_URL}/resources`, novoRecurso, { headers: { Authorization: `Bearer ${token}` } });
+      await api.post(`/resources`, novoRecurso);
       toast.success("Recurso criado!");
       setIsRecursoModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['recursos'] });
@@ -126,7 +132,7 @@ function AdminDashboard() {
   const handleEliminarRecurso = async (id, nome) => {
     const efetuarEliminacao = async () => {
       try {
-        await axios.delete(`${API_URL}/resources/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+        await api.delete(`/resources/${id}`);
         toast.info("Recurso removido.");
         queryClient.invalidateQueries({ queryKey: ['recursos'] });
       } catch (error) {
@@ -139,7 +145,7 @@ function AdminDashboard() {
         <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
         <p className="text-sm text-gray-600 mb-4">Tens a certeza que queres eliminar <b>{nome}</b>?</p>
         <div className="flex gap-2">
-          <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Eliminar</button>
+          <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-admin hover:bg-admin-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Eliminar</button>
           <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors">Cancelar</button>
         </div>
       </div>
@@ -149,7 +155,7 @@ function AdminDashboard() {
   const handleActualizarRecurso = async (e) => {
     e.preventDefault();
     try {
-      await axios.put(`${API_URL}/resources/${editingRecurso.id}`, editingRecurso, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/resources/${editingRecurso.id}`, editingRecurso);
       toast.info("Recurso atualizado!");
       setIsEditRecursoModalOpen(false);
       queryClient.invalidateQueries({ queryKey: ['recursos'] });
@@ -163,7 +169,7 @@ function AdminDashboard() {
       const finalX = x === undefined ? null : x;
       const finalY = y === undefined ? null : y;
       const finalR = r === undefined ? 0 : r;
-      await axios.put(`${API_URL}/resources/${id}/position`, { pos_x: finalX, pos_y: finalY, rotation: finalR }, { headers: { Authorization: `Bearer ${token}` } });
+      await api.put(`/resources/${id}/position`, { pos_x: finalX, pos_y: finalY, rotation: finalR });
       queryClient.setQueryData(['recursos'], (antigos) => antigos.map(rec => rec.id === id ? { ...rec, pos_x: finalX, pos_y: finalY, rotation: finalR } : rec));
       toast.success("Posição do recurso atualizada no mapa!");
     } catch (error) {
@@ -190,14 +196,14 @@ function AdminDashboard() {
           </div>
 
           {activeTab === 'utilizadores' && (
-            <button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
+            <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
               Registar Novo Colaborador
             </button>
           )}
 
           {activeTab === 'recursos' && (
-            <button onClick={() => setIsRecursoModalOpen(true)} className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
+            <button onClick={() => setIsRecursoModalOpen(true)} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Adicionar Novo Recurso
             </button>
@@ -205,7 +211,7 @@ function AdminDashboard() {
         </div>
 
         {isErrorUsers ? (
-          <div className="bg-red-50 text-red-600 border border-red-200 p-6 rounded-xl text-center shadow-sm">
+          <div className="bg-admin-soft text-admin border-admin-light p-6 rounded-xl text-center shadow-sm">
             <h3 className="text-lg font-bold">Erro ao carregar dados. Verifique a sua ligação.</h3>
           </div>
         ) : (
@@ -217,7 +223,7 @@ function AdminDashboard() {
               <div className="animate-fade-in space-y-4">
                 <div className="flex gap-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
                   {[1, 2, 3].map(piso => (
-                    <button key={piso} onClick={() => setPisoSelecionado(piso)} className={`px-4 py-2 rounded-lg font-bold transition-all ${pisoSelecionado === piso ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Piso {piso}</button>
+                    <button key={piso} onClick={() => setPisoSelecionado(piso)} className={`px-4 py-2 rounded-lg font-bold transition-all ${pisoSelecionado === piso ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Piso {piso}</button>
                   ))}
                 </div>
                 <PlantaEditor recursos={recursos.filter(r => Number(r.floor) === pisoSelecionado)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoSelecionado} modoAdmin={true} />
@@ -235,7 +241,7 @@ function AdminDashboard() {
         <UserForm user={editingUser} onChange={setEditingUser} onSubmit={handleActualizarUtilizador} picklists={picklists} isEdit />
       </Modal>
 
-      <Modal isOpen={isRecursoModalOpen} onClose={() => setIsRecursoModalOpen(false)} title="Novo Recurso" icon={<svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>}>
+      <Modal isOpen={isRecursoModalOpen} onClose={() => setIsRecursoModalOpen(false)} title="Novo Recurso" icon={<svg className="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>}>
         <ResourceForm resource={novoRecurso} onChange={setNovoRecurso} onSubmit={handleRegistarRecurso} picklists={picklists} />
       </Modal>
 

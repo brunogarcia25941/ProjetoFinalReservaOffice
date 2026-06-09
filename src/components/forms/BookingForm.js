@@ -50,7 +50,7 @@ function BookingForm({ booking, resources, onSubmit, onChange, onCancel }) {
         </button>
         <button 
           type="submit"
-          className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-blue-200 text-sm"
+          className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-primary-light text-sm"
         >
           Guardar Alterações
         </button>

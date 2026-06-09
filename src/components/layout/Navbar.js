@@ -18,13 +18,13 @@ function Navbar({ user, logout, isAdmin = false }) {
     : "bg-white border-b border-gray-200 px-6 py-3 flex justify-between items-center sticky top-0 z-10";
 
   const textClass = isAdmin ? "text-white" : "text-gray-800";
-  const linkClass = isAdmin ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-blue-600";
-  const activeLinkClass = isAdmin ? "text-white" : "text-blue-600 border-b-2 border-blue-600 pb-1";
+  const linkClass = isAdmin ? "text-gray-300 hover:text-white" : "text-gray-600 hover:text-primary";
+  const activeLinkClass = isAdmin ? "text-white" : "text-primary border-b-2 border-primary pb-1";
 
   return (
     <nav className={navClass}>
       <div className="flex items-center gap-2">
-        <div className={isAdmin ? "bg-red-600 p-1.5 rounded-lg" : "bg-blue-600 p-1.5 rounded-lg"}>
+        <div className={isAdmin ? "bg-admin p-1.5 rounded-lg" : "bg-primary p-1.5 rounded-lg"}>
           <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             {isAdmin ? (
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
@@ -48,8 +48,8 @@ function Navbar({ user, logout, isAdmin = false }) {
               Reservar Recurso
             </Link>
             <Link 
-              to="/minhas-reservas" 
-              className={location.pathname === '/minhas-reservas' ? activeLinkClass : linkClass}
+              to="/my-bookings" 
+              className={location.pathname === '/my-bookings' ? activeLinkClass : linkClass}
             >
               As Minhas Reservas
             </Link>
@@ -61,7 +61,7 @@ function Navbar({ user, logout, isAdmin = false }) {
         <div className="w-px h-5 bg-gray-300 mx-2"></div>
         
         <div className="flex items-center gap-2">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isAdmin ? "bg-red-600 text-white" : "bg-gray-200 text-gray-600"}`}>
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold ${isAdmin ? "bg-admin text-white" : "bg-gray-200 text-gray-600"}`}>
             {isAdmin ? "AD" : getIniciais(user?.name)}
           </div>
           <span className={isAdmin ? "text-white" : "font-medium"}>
@@ -72,7 +72,7 @@ function Navbar({ user, logout, isAdmin = false }) {
             <Link 
               to="/admin" 
               title="Ir para Administração" 
-              className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-red-100 text-red-700 px-2 py-1 rounded hover:bg-red-200 transition-colors cursor-pointer"
+              className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-admin-light text-admin-hover px-2 py-1 rounded hover:bg-admin-light/80 transition-colors cursor-pointer"
             >
               Admin
             </Link>
@@ -81,7 +81,7 @@ function Navbar({ user, logout, isAdmin = false }) {
 
         <button 
           onClick={logout} 
-          className={`text-sm ml-2 font-medium ${isAdmin ? "text-red-400 hover:text-red-300" : "text-red-600 hover:text-red-800"}`}
+          className={`text-sm ml-2 font-medium ${isAdmin ? "text-red-400 hover:text-red-300" : "text-admin hover:text-admin-hover"}`}
         >
           Sair
         </button>

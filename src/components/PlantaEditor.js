@@ -2,23 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Stage, Layer, Rect, Text, Group, Image } from 'react-konva';
 
 function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual, modoAdmin = false, reservarRecurso }) {
-  // Referência para o Palco (Stage) do Konva, necessária para capturar a posição do ponteiro do rato
   const stageRef = useRef(null);
-
-  // Estado para armazenar temporariamente o ID do recurso que está a ser arrastado da lista lateral
+  const containerRef = useRef(null); // Ref para o contentor pai para calcular a posição do tooltip
   const [draggedResourceId, setDraggedResourceId] = useState(null);
-
-
-  // Estado para guardar o objeto da imagem carregada
   const [imageObj, setImageObj] = useState(null);
-
   const [scale, setScale] = useState(1);
   const [position, setPosition] = useState({ x: 0, y: 0 });
 
-  // Função para gerir o zoom com a roda do rato
+  // Estados para a Tooltip
+  const [tooltipData, setTooltipData] = useState(null);
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+
   const handleWheel = (e) => {
     e.evt.preventDefault();
-    const scaleBy = 1.1; // Velocidade do zoom
+    const scaleBy = 1.1; 
     const stage = e.target.getStage();
     const oldScale = stage.scaleX();
     const mousePointTo = {
@@ -27,7 +24,6 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     };
 
     const newScale = e.evt.deltaY < 0 ? oldScale * scaleBy : oldScale / scaleBy;
-    // Limites de zoom (min 0.5x, max 3x)
     if (newScale < 0.5 || newScale > 3) return;
 
     setScale(newScale);
@@ -39,13 +35,12 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
 
   useEffect(() => {
     const img = new window.Image();
-    img.src = `/planta${pisoAtual}.png`; // Caminho para a imagem na pasta public/
+    img.src = `/planta${pisoAtual}.png`; 
     img.onload = () => {
       setImageObj(img);
     };
   }, [pisoAtual]);
 
-  // Quando o utilizador começa o drag e acaba o drag
   const handleStageDragStart = (id) => {
     setDraggedResourceId(id);
   };
@@ -54,48 +49,74 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     e.preventDefault();
     if (!draggedResourceId) return;
 
-    // Diz ao Konva para ler o evento nativo do browser e registar a posição interna do ponteiro
     stageRef.current.setPointersPositions(e);
     const pointerPosition = stageRef.current.getPointerPosition();
 
-    const grid = 25; // tamanho da grelha
+    const grid = 25; 
     const snappedX = Math.round(pointerPosition.x / grid) * grid;
     const snappedY = Math.round(pointerPosition.y / grid) * grid;
 
-    // 1. Atualiza o estado local imediatamente para que a mesa apareça no mapa de forma fluida
     setRecursos(recursosAnteriores =>
       recursosAnteriores.map(rec =>
         rec.id === draggedResourceId
-          ? {
-            ...rec,
-            pos_x: snappedX,
-            pos_y: snappedY
-          }
+          ? { ...rec, pos_x: snappedX, pos_y: snappedY }
           : rec
       )
     );
 
-    // 2. Dispara o pedido HTTP PUT para gravar as coordenadas arredondadas na base de dados
     salvarCoordenadasNaBD(draggedResourceId, snappedX, snappedY);
-
-    // Limpa o ID do recurso arrastado
     setDraggedResourceId(null);
   };
 
   return (
-    <div className={modoAdmin ? "grid grid-cols-1 lg:grid-cols-4 gap-6" : "w-full"}>
+    <div className={modoAdmin ? "grid grid-cols-1 lg:grid-cols-4 gap-6 relative" : "w-full relative"} ref={containerRef}>
+      
+      {/* Tooltip HTML renderizada por cima do canvas */}
+      {tooltipData && !draggedResourceId && (
+        <div 
+          className="absolute z-50 bg-white px-3 py-2 rounded-lg shadow-xl border border-gray-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 animate-fade-in"
+          style={{ left: tooltipPos.x, top: tooltipPos.y - 10 }}
+        >
+          <div className="font-bold text-gray-800 text-sm">{tooltipData.name}</div>
+          <div className="text-xs text-gray-500 capitalize">{tooltipData.type === 'desk' ? 'Mesa' : tooltipData.type} - Piso {tooltipData.floor}</div>
+          
+          <div className="mt-2 border-t pt-2">
+            {tooltipData.status === 'maintenance' ? (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                <span className="w-2 h-2 rounded-full bg-gray-400"></span>
+                Em Manutenção
+              </span>
+            ) : tooltipData.is_booked ? (
+              <div className="flex flex-col gap-1">
+                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-admin bg-admin-soft px-2 py-1 rounded-md border border-admin-light w-max">
+                  <span className="w-2 h-2 rounded-full bg-admin"></span>
+                  Ocupado
+                </span>
+                {tooltipData.booked_by_user && (
+                  <span className="text-xs text-gray-700 font-medium">Por: {tooltipData.booked_by_user}</span>
+                )}
+              </div>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-xs font-bold text-success bg-success-soft px-2 py-1 rounded-md border border-success-light">
+                <span className="w-2 h-2 rounded-full bg-success"></span>
+                Livre para Reservar
+              </span>
+            )}
+          </div>
+          
+          {/* Seta do tooltip */}
+          <div className="absolute left-1/2 bottom-0 transform -translate-x-1/2 translate-y-full w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-white"></div>
+        </div>
+      )}
 
-      {/* BARRA LATERAL: Lista de recursos que ainda NÃO têm coordenadas atribuídas */}
       {modoAdmin && (
-        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-[500px] overflow-y-auto">
+        <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-[500px] overflow-y-auto relative z-10">
           <h4 className="font-semibold text-gray-700 mb-3 text-sm border-b pb-2">Mesas / Salas Disponíveis</h4>
           <div className="space-y-2">
-
-            {/* Filtramos a lista exibindo apenas os recursos onde pos_x é nulo ou indefinido */}
             {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).map(recurso => (
               <div
                 key={recurso.id}
-                draggable // Permite que o elemento seja arrastado
+                draggable
                 onDragStart={() => handleStageDragStart(recurso.id)}
                 className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors flex items-center justify-between"
               >
@@ -103,15 +124,13 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   <span className="font-medium text-gray-800 block text-sm">{recurso.name}</span>
                   <span className="text-xs text-gray-400 capitalize">{recurso.type}</span>
                 </div>
-                <div className="bg-blue-50 text-blue-600 p-1 rounded">
+                <div className="bg-primary-soft text-primary p-1 rounded">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path>
                   </svg>
                 </div>
               </div>
             ))}
-
-            {/* Mensagem caso já não existam recursos por posicionar */}
             {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).length === 0 && (
               <p className="text-xs text-gray-400 text-center py-4">Todos os recursos já se encontram posicionados no mapa.</p>
             )}
@@ -119,13 +138,11 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
         </div>
       )}
 
-      {/* CONTENTOR DO MAPA: Stage do Konva */}
       <div
         className={modoAdmin ? "lg:col-span-3 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px] " : "w-full  rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px]"}
-        onDragOver={(e) => e.preventDefault()} // Obrigatório para permitir que o evento onDrop funcione
+        onDragOver={(e) => e.preventDefault()} 
         onDrop={handleStageDrop}
       >
-        {/* Stage define a área visível e o sistema de coordenadas do Canvas (800x500 pixéis por agora) */}
         <Stage
           width={800}
           height={500}
@@ -136,48 +153,40 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
           x={position.x}
           y={position.y}
           onWheel={handleWheel}
-          draggable={!draggedResourceId} // Só arrasta o mapa se não estivermos a posicionar um recurso
+          draggable={!draggedResourceId} 
           onDragEnd={(e) => {
-            // Se o arraste vier do Stage (fundo), guarda a nova posição do "pan"
             if (e.target === stageRef.current) {
               setPosition({ x: e.target.x(), y: e.target.y() });
             }
           }}
         >
-          {/* O Konva exige que todos os elementos visuais estejam dentro de um Layer (Camada) */}
           <Layer>
-            {/* Imagem de fundo da planta */}
             {imageObj && (
               <Image
                 image={imageObj}
                 width={800}
                 height={500}
-                opacity={0.5} // torna a planta mais clara para destacar as mesas etc.
+                opacity={0.5} 
               />
             )}
 
-            {/* Mapeamos e desenhamos apenas os recursos que já têm coordenadas válidas */}
             {recursos.filter(r => r.pos_x !== null && r.pos_x !== undefined).map(recurso => (
               <Group
                 key={recurso.id}
                 x={recurso.pos_x}
                 y={recurso.pos_y}
                 rotation={recurso.rotation || 0}
-                draggable={modoAdmin} // Torna o elemento arrastável livremente dentro do próprio Canvas apenas para o modo admin
+                draggable={modoAdmin} 
 
-                // Evento disparado quando o utilizador larga o objeto após arrastá-lo no mapa
                 onDragEnd={(e) => {
                   if (!modoAdmin) return;
-                  const grid = 25; // tamanho da grelha
+                  const grid = 25; 
                   const node = e.target;
-                  // Captura as novas coordenadas X e Y relativas ao Stage
                   const novoX = Math.round(node.x() / grid) * grid;
                   const novoY = Math.round(node.y() / grid) * grid;
 
-                  // Atualiza a posição do objeto no mapa para a posição "encaixada" na grelha
                   node.position({ x: novoX, y: novoY });
 
-                  // Atualiza a base de dados de imediato para manter o estado persistente
                   const rotacaoAtual = recurso.rotation || 0;
                   salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
                 }}
@@ -188,31 +197,47 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   }
                 }}
 
-                // Mudar o cursor para "pointer" ao passar o rato
                 onMouseEnter={(e) => {
-                  const container = e.target.getStage().container();
+                  const stage = e.target.getStage();
+                  const container = stage.container();
+                  
+                  // Mudar cursor se puder reservar
                   if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
                     container.style.cursor = 'pointer';
                   }
+
+                  // Calcular posição do rato relativa ao contentor DOM
+                  if (containerRef.current) {
+                    const pointerPos = stage.getPointerPosition();
+                    // Como a div do stage pode ter margens/padding ou estar ao lado da sidebar no admin,
+                    // calculamos a posição absoluta relativa ao wrapper mais próximo.
+                    const stageBox = container.getBoundingClientRect();
+                    const parentBox = containerRef.current.getBoundingClientRect();
+                    
+                    setTooltipPos({
+                      x: pointerPos.x + (stageBox.left - parentBox.left),
+                      y: pointerPos.y + (stageBox.top - parentBox.top)
+                    });
+                    setTooltipData(recurso);
+                  }
                 }}
+                
                 onMouseLeave={(e) => {
                   e.target.getStage().container().style.cursor = 'default';
+                  setTooltipData(null);
                 }}
               >
-                {/* Formato físico da mesa/sala (Retângulo azul com cantos arredondados por agora) */}
                 <Rect
                   width={recurso.type === 'room' ? 120 : 60}
                   height={recurso.type === 'room' ? 80 : 40}
-                  // Lógica de cores: Vermelho se ocupado, Cinza se manutenção, Azul se livre
-                  fill={recurso.status === 'maintenance' ? '#94a3b8' : (recurso.is_booked ? '#ef4444' : '#2563eb')}
+                  fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
                   cornerRadius={4}
                   shadowBlur={5}
                   shadowOpacity={0.2}
-                  stroke={recurso.is_booked ? '#b91c1c' : '#1e40af'}
+                  stroke={recurso.status === 'maintenance' ? '#991b1b' : (recurso.is_booked ? '#4b5563' : '#15803d')}
                   strokeWidth={1}
                 />
 
-                {/* Texto centralizado contendo o identificador ou nome do recurso */}
                 <Text
                   text={recurso.name}
                   fontSize={10}
@@ -223,11 +248,10 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   padding={5}
                   align="center"
                   verticalAlign="middle"
-                  height={40}
                 />
+                
                 {modoAdmin && (
                   <>
-                    {/* BOTÃO RODAR (Círculo azul claro no canto inferior direito) */}
                     <Group
                       x={45} y={25}
                       onClick={() => {
@@ -239,7 +263,6 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
                     </Group>
 
-                    {/* BOTÃO REMOVER (Círculo branco com borda vermelha no topo direito) */}
                     <Group
                       x={45} y={-5}
                       onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
@@ -250,13 +273,10 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   </>
                 )}
               </Group>
-
             ))}
-
           </Layer>
         </Stage>
       </div>
-
     </div>
   );
 }

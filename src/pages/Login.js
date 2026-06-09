@@ -22,7 +22,7 @@ function Login() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center p-4 font-sans">
       <div className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 w-full max-w-md">
         <div className="flex flex-col items-center mb-8">
-          <div className="bg-blue-600 p-3 rounded-xl mb-4">
+          <div className="bg-primary p-3 rounded-xl mb-4">
             <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
             </svg>
@@ -34,7 +34,7 @@ function Login() {
         <LoginForm onSubmit={fazerLogin} />
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          Don't have an account? <a href="#/" className="font-medium text-blue-600 hover:text-blue-500">Contact your admin</a>
+          Don't have an account? <a href="#/" className="font-medium text-primary hover:text-primary-hover">Contact your admin</a>
         </div>
       </div>
 

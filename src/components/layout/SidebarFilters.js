@@ -23,7 +23,7 @@ function SidebarFilters({
       <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wider border-b border-gray-100 pb-2">Configurar Reserva</h3>
 
-        <div className="mb-5 bg-blue-50/50 p-3 rounded-lg border border-blue-100">
+        <div className="mb-5 bg-primary-soft/50 p-3 rounded-lg border border-primary-light">
           <label className="text-xs font-semibold text-gray-700 mb-1 block">Horário</label>
 
           <div className="space-y-3 mt-3">
@@ -36,7 +36,7 @@ function SidebarFilters({
                   setDataInicio(e.target.value);
                   setAtalhoAtivo(null);
                 }}
-                className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500"
+                className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-primary focus:border-primary"
               />
             </div>
             <div>
@@ -48,12 +48,12 @@ function SidebarFilters({
                   setDataFim(e.target.value);
                   setAtalhoAtivo(null);
                 }}
-                className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-blue-500 focus:border-blue-500"
+                className="w-full mt-1 border border-gray-300 rounded p-1.5 text-xs focus:ring-primary focus:border-primary"
               />
             </div>
           </div>
 
-          <div className="mt-4 pt-4 border-t border-blue-200/60">
+          <div className="mt-4 pt-4 border-t border-primary-light/60">
             <label className="text-[10px] font-bold text-gray-500 uppercase mb-2 block flex items-center justify-between">
               <span className="flex items-center gap-1">
                 <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
@@ -64,12 +64,12 @@ function SidebarFilters({
             <div className="flex flex-wrap gap-1.5">
               <button
                 onClick={() => aplicarAtalho('resto_hoje')}
-                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'resto_hoje' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'resto_hoje' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-primary-hover border-primary-light hover:bg-primary-soft'}`}
               >
                 Resto de Hoje
               </button>
 
-              <div className={`flex items-center border rounded-md transition-all ${atalhoAtivo === 'proximas_h' ? 'border-blue-600 bg-blue-600' : 'border-blue-200 bg-white'}`}>
+              <div className={`flex items-center border rounded-md transition-all ${atalhoAtivo === 'proximas_h' ? 'border-primary bg-primary' : 'border-primary-light bg-white'}`}>
                 <input
                   type="number"
                   value={numHoras}
@@ -80,11 +80,11 @@ function SidebarFilters({
                     setNumHoras(novoValor);
                     if (atalhoAtivo === 'proximas_h') aplicarAtalho('proximas_h', novoValor);
                   }}
-                  className={`w-8 text-center text-[10px] font-bold bg-transparent outline-none ${atalhoAtivo === 'proximas_h' ? 'text-white' : 'text-blue-700'}`}
+                  className={`w-8 text-center text-[10px] font-bold bg-transparent outline-none ${atalhoAtivo === 'proximas_h' ? 'text-white' : 'text-primary-hover'}`}
                 />
                 <button
                   onClick={() => aplicarAtalho('proximas_h')}
-                  className={`text-[10px] font-bold px-2 py-1.5 rounded-r-md transition-all ${atalhoAtivo === 'proximas_h' ? 'text-white hover:bg-blue-700' : 'text-blue-700 border-l border-blue-100 hover:bg-blue-50'}`}
+                  className={`text-[10px] font-bold px-2 py-1.5 rounded-r-md transition-all ${atalhoAtivo === 'proximas_h' ? 'text-white hover:bg-primary-hover' : 'text-primary-hover border-l border-primary-light hover:bg-primary-soft'}`}
                 >
                   Próximas Horas
                 </button>
@@ -92,14 +92,14 @@ function SidebarFilters({
 
               <button
                 onClick={() => aplicarAtalho('amanha')}
-                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'amanha' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'amanha' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-primary-hover border-primary-light hover:bg-primary-soft'}`}
               >
                 Amanhã
               </button>
 
               <button
                 onClick={() => aplicarAtalho('semana')}
-                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'semana' ? 'bg-blue-600 text-white border-blue-600 shadow-sm' : 'bg-white text-blue-700 border-blue-200 hover:bg-blue-50'}`}
+                className={`text-[10px] font-bold px-2 py-1.5 rounded-md transition-all border ${atalhoAtivo === 'semana' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-primary-hover border-primary-light hover:bg-primary-soft'}`}
               >
                 Esta Semana
               </button>
@@ -112,7 +112,7 @@ function SidebarFilters({
           <select
             value={pisoFiltro}
             onChange={(e) => setPisoFiltro(e.target.value)}
-            className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-blue-500 focus:border-blue-500 bg-gray-50 cursor-pointer"
+            className="w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-primary focus:border-primary bg-gray-50 cursor-pointer"
           >
             <option value="">Todos os Pisos</option>
             {pisosDisponiveis.map((piso) => (
@@ -137,7 +137,7 @@ function SidebarFilters({
                         setTiposDesmarcados(prev => [...prev, tipo]);
                       }
                     }}
-                    className="rounded text-blue-600 focus:ring-blue-500 w-4 h-4 cursor-pointer border-gray-300"
+                    className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer border-gray-300"
                   />
                   <span className="capitalize">{traduzirTipo(tipo)}</span>
                 </label>

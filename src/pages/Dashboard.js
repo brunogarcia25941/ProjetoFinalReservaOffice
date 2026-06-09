@@ -1,9 +1,8 @@
 import React, { useEffect, useState, useContext, useCallback } from 'react';
-import axios from 'axios';
+import api from '../api/axiosConfig';
 import { useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
-import API_URL from '../config';
 import PlantaEditor from '../components/PlantaEditor';
 import Navbar from '../components/layout/Navbar';
 import SidebarFilters from '../components/layout/SidebarFilters';
@@ -85,8 +84,7 @@ function Dashboard() {
     }
 
     try {
-      const response = await axios.get(`${API_URL}/resources/availability`, {
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await api.get(`/resources/availability`, {
         params: { start: startTimeFormatado, end: endTimeFormatado }
       });
       setRecursos(response.data);
@@ -116,7 +114,7 @@ function Dashboard() {
 
     const efetuarReservaApi = async () => {
       try {
-        await axios.post(`${API_URL}/bookings`, { resource_id: id, start_time: startTimeFormatado, end_time: endTimeFormatado }, { headers: { Authorization: `Bearer ${token}` } });
+        await api.post(`/bookings`, { resource_id: id, start_time: startTimeFormatado, end_time: endTimeFormatado });
         toast.success(`Reserva para ${nome} efetuada com sucesso!`);
         carregarRecursosComDisponibilidade();
       } catch (error) {
@@ -139,7 +137,7 @@ function Dashboard() {
           </div>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => { efetuarReservaApi(); closeToast(); }} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Confirmar</button>
+          <button onClick={() => { efetuarReservaApi(); closeToast(); }} className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Confirmar</button>
           <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors">Cancelar</button>
         </div>
       </div>
@@ -190,29 +188,29 @@ function Dashboard() {
               <p className="text-sm text-gray-500">A mostrar {recursosFiltrados.length} recurso(s) {pisoFiltro ? `no Piso ${pisoFiltro}` : 'em todos os pisos'}.</p>
             </div>
             <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-              <button onClick={() => setVista('grelha')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'grelha' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Grelha</button>
-              <button onClick={() => setVista('mapa')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'mapa' ? 'bg-white shadow-sm text-blue-600' : 'text-gray-500 hover:text-gray-700'}`}>Mapa</button>
+              <button onClick={() => setVista('grelha')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'grelha' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Grelha</button>
+              <button onClick={() => setVista('mapa')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'mapa' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Mapa</button>
             </div>
             <div className="flex gap-2 text-xs font-medium">
               {['disponivel', 'ocupado', 'manutencao'].map(s => (
-                <button key={s} onClick={() => setStatusFiltro(statusFiltro === s ? 'todos' : s)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === s ? 'bg-blue-50 border-blue-400 shadow-sm text-blue-800' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}>
-                  <span className={`w-3 h-3 rounded-full border ${s === 'disponivel' ? 'bg-green-100 border-green-400' : s === 'ocupado' ? 'bg-gray-200 border-gray-400' : 'bg-red-100 border-red-400'}`}></span>
+                <button key={s} onClick={() => setStatusFiltro(statusFiltro === s ? 'todos' : s)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === s ? 'bg-primary-soft border-primary-light shadow-sm text-primary-hover' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}>
+                  <span className={`w-3 h-3 rounded-full border ${s === 'disponivel' ? 'bg-success-light border-success' : s === 'ocupado' ? 'bg-gray-200 border-gray-400' : 'bg-admin-light border-admin'}`}></span>
                   {s.charAt(0).toUpperCase() + s.slice(1)}
                 </button>
               ))}
             </div>
           </div>
 
-          {erro && <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm text-center font-medium">{erro}</div>}
+          {erro && <div className="bg-admin-soft text-admin p-4 rounded-lg mb-6 text-sm text-center font-medium">{erro}</div>}
           {new Date(dataInicio) >= new Date(dataFim) && (
-            <div className="bg-orange-50 text-orange-700 p-8 rounded-lg mb-6 text-center border border-dashed border-orange-300">
+            <div className="bg-warning-soft text-warning-hover p-8 rounded-lg mb-6 text-center border border-dashed border-warning-light">
               <h4 className="font-bold text-lg">Horário de Reserva Inválido</h4>
               <p className="text-sm mt-1">A hora de fim tem de ser posterior à hora de início.</p>
             </div>
           )}
 
           {isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && (
-            <div className="bg-orange-50 text-orange-700 p-8 rounded-xl mb-6 text-center border border-dashed border-orange-300">
+            <div className="bg-warning-soft text-warning-hover p-8 rounded-xl mb-6 text-center border border-dashed border-warning-light">
               <h4 className="font-bold text-lg">Fora do Horário De Escritório</h4>
               <p className="text-sm mt-1">O escritório funciona apenas entre as 09:00 e as 18:00.</p>
             </div>
@@ -224,7 +222,7 @@ function Dashboard() {
             <div className="animate-fade-in space-y-4">
               <div className="flex gap-2 bg-gray-50 p-2 rounded-lg border border-gray-100 w-fit">
                 {[1, 2, 3].map(piso => (
-                  <button key={piso} onClick={() => setPisoFiltro(String(piso))} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${String(pisoFiltro || 1) === String(piso) ? 'bg-blue-600 text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Piso {piso}</button>
+                  <button key={piso} onClick={() => setPisoFiltro(String(piso))} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${String(pisoFiltro || 1) === String(piso) ? 'bg-primary text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Piso {piso}</button>
                 ))}
               </div>
               <div className="border border-gray-100 rounded-xl overflow-hidden shadow-inner bg-gray-50">
@@ -241,12 +239,19 @@ function Dashboard() {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
                     {recursosFiltrados.filter(r => r.type === tipo).map((recurso) => {
-                      const isAvailable = recurso.status !== 'maintenance' && recurso.is_booked !== 1;
+                      const isMaintenance = recurso.status === 'maintenance';
+                      const isAlreadyBooked = recurso.is_booked === 1;
+                      const isAvailable = !isMaintenance && !isAlreadyBooked;
                       return (
-                        <div key={recurso.id} onClick={() => isAvailable && reservarRecurso(recurso.id, recurso.name)} className={`p-3 rounded-xl border transition-all flex flex-col items-center text-center ${isAvailable ? 'bg-green-50/30 border-green-200 hover:border-green-400 hover:shadow-sm cursor-pointer hover:-translate-y-1' : 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed'}`}>
+                        <div key={recurso.id} onClick={() => isAvailable && reservarRecurso(recurso.id, recurso.name)} className={`p-3 rounded-xl border transition-all flex flex-col items-center text-center ${isAvailable ? 'bg-success-soft/30 border-success-light hover:border-success hover:shadow-sm cursor-pointer hover:-translate-y-1' : 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed'}`}>
+                          {recurso.type === 'monitor' ? (
+                            <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-success' : isAlreadyBooked ? 'text-gray-400' : 'text-admin'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                          ) : (
+                            <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-success' : isAlreadyBooked ? 'text-gray-400' : 'text-admin'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
+                          )}
                           <span className="font-bold text-xs text-gray-800 truncate w-full mb-1">{recurso.name}</span>
                           <span className="text-[10px] text-gray-400">Piso {recurso.floor}</span>
-                          <span className={`mt-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${isAvailable ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>{isAvailable ? 'Livre' : 'Ocupada'}</span>
+                          <span className={`mt-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${isAvailable ? 'bg-success-light text-success-hover' : 'bg-gray-100 text-gray-700'}`}>{isAvailable ? 'Livre' : 'Ocupada'}</span>
                         </div>
                       );
                     })}
