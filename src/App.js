@@ -7,6 +7,7 @@ import MyBookings from './pages/MyBookings';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import AdminDashboard from './pages/AdminDashboard';
+import TicketsDashboard from './pages/TicketsDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -33,6 +34,7 @@ const rotasPublicas = [
 const rotasPrivadas = [
   { path: '/dashboard', element: <Dashboard /> },
   { path: '/my-bookings', element: <MyBookings /> },
+  { path: '/tickets', element: <TicketsDashboard /> },
 ];
 
 const rotasAdmin = [

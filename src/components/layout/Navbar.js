@@ -80,6 +80,12 @@ function Navbar({ user, logout, isAdmin = false }) {
             >
               As Minhas Reservas
             </Link>
+            <Link 
+              to="/tickets" 
+              className={location.pathname === '/tickets' ? activeLinkClass : linkClass}
+            >
+              Suporte / Avarias
+            </Link>
           </>
         ) : (
           <Link to="/dashboard" className={linkClass}>Voltar ao Portal Normal</Link>
@@ -103,6 +109,12 @@ function Navbar({ user, logout, isAdmin = false }) {
             >
               Admin
             </Link>
+          )}
+
+          {!isAdmin && user?.role === 'tecnico' && (
+            <span className="ml-1 text-[10px] font-bold uppercase tracking-wide bg-primary-soft text-primary-hover px-2 py-1 rounded">
+              Técnico
+            </span>
           )}
         </div>
 

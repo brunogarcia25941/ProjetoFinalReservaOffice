@@ -330,7 +330,17 @@ function Dashboard() {
                       const isAlreadyBooked = recurso.is_booked === 1;
                       const isAvailable = !isMaintenance && !isAlreadyBooked;
                       return (
-                        <div key={recurso.id} onClick={() => isAvailable && reservarRecurso(recurso.id, recurso.name)} className={`p-3 rounded-xl border transition-all flex flex-col items-center text-center ${isAvailable ? 'bg-success-soft/30 border-success-light hover:border-success hover:shadow-sm cursor-pointer hover:-translate-y-1' : 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed'}`}>
+                        <div key={recurso.id} onClick={() => isAvailable && reservarRecurso(recurso.id, recurso.name)} className={`relative p-3 rounded-xl border transition-all flex flex-col items-center text-center ${isAvailable ? 'bg-success-soft/30 border-success-light hover:border-success hover:shadow-sm cursor-pointer hover:-translate-y-1' : 'bg-gray-50/50 border-gray-200 opacity-60 cursor-not-allowed'}`}>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(`/tickets?resource_id=${recurso.id}`);
+                            }}
+                            className="absolute top-2 right-2 p-1 text-gray-400 hover:text-admin hover:bg-gray-100 rounded-lg transition-all"
+                            title="Reportar Avaria"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                          </button>
                           {recurso.type === 'monitor' ? (
                             <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-success' : isAlreadyBooked ? 'text-gray-400' : 'text-admin'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
                           ) : (
