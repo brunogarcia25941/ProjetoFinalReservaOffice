@@ -179,7 +179,7 @@ function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans relative">
-      <Navbar user={user} logout={handleLogout} />
+      <Navbar user={user} logout={handleLogout} isAdmin={true} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-6">
