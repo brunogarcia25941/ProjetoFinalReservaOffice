@@ -1,6 +1,12 @@
 import React from 'react';
+import GuestInput from './GuestInput';
 
 function BookingForm({ booking, resources, onSubmit, onChange, onCancel }) {
+  const selectedResource = resources.find(r => String(r.id) === String(booking.resource_id));
+  const isRoom = selectedResource && selectedResource.type === 'room';
+
+  const guestEmails = (booking.guests || []).map(g => typeof g === 'string' ? g : g.email);
+
   return (
     <form onSubmit={onSubmit} className="p-6 space-y-4">
       <div>
@@ -39,6 +45,15 @@ function BookingForm({ booking, resources, onSubmit, onChange, onCancel }) {
           />
         </div>
       </div>
+
+      {isRoom && (
+        <div className="pt-2 border-t border-gray-100">
+          <GuestInput 
+            guests={guestEmails}
+            onChange={(newEmails) => onChange({ ...booking, guests: newEmails })}
+          />
+        </div>
+      )}
 
       <div className="pt-4 flex gap-3">
         <button 

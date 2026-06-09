@@ -1,6 +1,36 @@
 import React from 'react';
 
 function ResourceTable({ resources, onEdit, onDelete }) {
+  const formatFeaturesText = (features) => {
+    let obj = {};
+    if (typeof features === 'string') {
+      try {
+        obj = JSON.parse(features);
+      } catch (e) {
+        return '';
+      }
+    } else {
+      obj = features;
+    }
+
+    if (!obj || Object.keys(obj).length === 0) return '';
+
+    const parts = [];
+    if (obj.capacity) parts.push(`Capacidade: ${obj.capacity} p.`);
+    if (obj.wifi) parts.push('Wi-Fi');
+    if (obj.projector) parts.push('Projetor');
+    if (obj.tv) parts.push('TV');
+    if (obj.whiteboard) parts.push('Quadro Branco');
+    if (obj.standing_desk) parts.push('Standing Desk');
+    if (obj.window_seat) parts.push('Junto à Janela');
+    if (obj.dual_monitor) parts.push('Mon. Duplo');
+    if (obj.size) parts.push(`${obj.size}"`);
+    if (obj.resolution) parts.push(obj.resolution);
+    if (obj.usb_c) parts.push('USB-C');
+
+    return parts.join(' | ');
+  };
+
   return (
     <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
       <table className="w-full text-left text-sm table-fixed">
@@ -17,7 +47,14 @@ function ResourceTable({ resources, onEdit, onDelete }) {
         <tbody className="divide-y">
           {resources.map((r) => (
             <tr key={r.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 font-semibold">{r.name}</td>
+              <td className="px-6 py-4">
+                <div className="font-semibold text-gray-800">{r.name}</div>
+                {r.features && formatFeaturesText(r.features) && (
+                  <div className="text-[10px] text-gray-400 mt-0.5 font-medium truncate">
+                    {formatFeaturesText(r.features)}
+                  </div>
+                )}
+              </td>
               <td className="px-6 py-4 capitalize">{r.type}</td>
               <td className="px-6 py-4">{r.building || 'Edifício Principal'}</td>
               <td className="px-6 py-4">Piso {r.floor}</td>

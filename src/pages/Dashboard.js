@@ -6,6 +6,8 @@ import { toast } from 'react-toastify';
 import PlantaEditor from '../components/PlantaEditor';
 import Navbar from '../components/layout/Navbar';
 import SidebarFilters from '../components/layout/SidebarFilters';
+import Modal from '../components/ui/Modal';
+import GuestInput from '../components/forms/GuestInput';
 
 function Dashboard() {
   const [recursos, setRecursos] = useState([]);
@@ -13,6 +15,8 @@ function Dashboard() {
   const [pisoFiltro, setPisoFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [tiposDesmarcados, setTiposDesmarcados] = useState([]);
+  const [isRoomBookingModalOpen, setIsRoomBookingModalOpen] = useState(false);
+  const [roomBookingData, setRoomBookingData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
   const hoje = new Date().toISOString().split('T')[0];
@@ -103,6 +107,26 @@ function Dashboard() {
     setPisoFiltro('');
   }, [selectedOffice]);
 
+  const confirmarReservaSala = async (e) => {
+    e.preventDefault();
+    if (!roomBookingData) return;
+    
+    try {
+      await api.post(`/bookings`, { 
+        resource_id: roomBookingData.id, 
+        start_time: roomBookingData.start_time, 
+        end_time: roomBookingData.end_time,
+        guests: roomBookingData.guests
+      });
+      toast.success(`Reserva para ${roomBookingData.name} efetuada com sucesso!`);
+      setIsRoomBookingModalOpen(false);
+      setRoomBookingData(null);
+      carregarRecursosComDisponibilidade();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Erro ao tentar reservar a sala.");
+    }
+  };
+
   const reservarRecurso = async (id, nome) => {
     if (!dataInicio || !dataFim) {
       toast.warn("Por favor, seleciona a data e hora de início e de fim no menu lateral.");
@@ -113,6 +137,21 @@ function Dashboard() {
 
     if (new Date(startTimeFormatado) >= new Date(endTimeFormatado)) {
       toast.error("Atenção: A data/hora de fim tem de ser depois da data/hora de início!");
+      return;
+    }
+
+    const recursoObj = recursos.find(r => r.id === id);
+    const isRoom = recursoObj && recursoObj.type === 'room';
+
+    if (isRoom) {
+      setRoomBookingData({
+        id,
+        name: nome,
+        start_time: startTimeFormatado,
+        end_time: endTimeFormatado,
+        guests: []
+      });
+      setIsRoomBookingModalOpen(true);
       return;
     }
 
@@ -267,6 +306,58 @@ function Dashboard() {
           )}
         </main>
       </div>
+
+      <Modal 
+        isOpen={isRoomBookingModalOpen} 
+        onClose={() => { setIsRoomBookingModalOpen(false); setRoomBookingData(null); }} 
+        title="Confirmar Reserva de Sala"
+      >
+        {roomBookingData && (
+          <form onSubmit={confirmarReservaSala} className="space-y-4">
+            <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-2.5">
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase">Sala</span>
+                <span className="text-sm font-semibold text-gray-800">{roomBookingData.name}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase">Início</span>
+                <span className="text-sm font-semibold text-gray-800">
+                  {new Date(roomBookingData.start_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-bold uppercase">Fim</span>
+                <span className="text-sm font-semibold text-gray-800">
+                  {new Date(roomBookingData.end_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' })}
+                </span>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <GuestInput 
+                guests={roomBookingData.guests}
+                onChange={(newGuests) => setRoomBookingData(prev => ({ ...prev, guests: newGuests }))}
+              />
+            </div>
+
+            <div className="pt-4 flex gap-3">
+              <button 
+                type="button"
+                onClick={() => { setIsRoomBookingModalOpen(false); setRoomBookingData(null); }}
+                className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm"
+              >
+                Cancelar
+              </button>
+              <button 
+                type="submit"
+                className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-primary-light text-sm"
+              >
+                Confirmar Reserva
+              </button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

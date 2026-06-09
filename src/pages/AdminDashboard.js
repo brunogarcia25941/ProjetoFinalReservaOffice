@@ -24,8 +24,8 @@ function AdminDashboard() {
 
   const [novoUser, setNovoUser] = useState({ name: '', email: '', password: '', home_office_id: null });
   const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '', home_office_id: null });
-  const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active', building: 'Edifício Principal' });
-  const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '', building: '' });
+  const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active', building: 'Edifício Principal', features: {} });
+  const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '', building: '', features: {} });
   
   const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
   const [isEditOfficeModalOpen, setIsEditOfficeModalOpen] = useState(false);
@@ -292,7 +292,24 @@ function AdminDashboard() {
           <>
             {activeTab === 'reservas' && <BookingTable bookings={todasReservas} />}
             {activeTab === 'utilizadores' && <UserTable users={utilizadores} picklists={picklists} onEdit={(u) => { setEditingUser(u); setIsEditModalOpen(true); }} onDelete={handleEliminarUtilizador} />}
-            {activeTab === 'recursos' && <ResourceTable resources={recursos.filter(r => !selectedOffice || r.building === selectedOffice)} onEdit={(r) => { setEditingRecurso(r); setIsEditRecursoModalOpen(true); }} onDelete={handleEliminarRecurso} />}
+            {activeTab === 'recursos' && (
+              <ResourceTable 
+                resources={recursos.filter(r => !selectedOffice || r.building === selectedOffice)} 
+                onEdit={(r) => { 
+                  let parsedFeatures = {};
+                  if (r.features) {
+                    try {
+                      parsedFeatures = typeof r.features === 'string' ? JSON.parse(r.features) : r.features;
+                    } catch(e) {
+                      console.error("Erro ao fazer parse das características:", e);
+                    }
+                  }
+                  setEditingRecurso({ ...r, features: parsedFeatures }); 
+                  setIsEditRecursoModalOpen(true); 
+                }} 
+                onDelete={handleEliminarRecurso} 
+              />
+            )}
             {activeTab === 'escritorios' && <OfficeTable offices={officesList} onEdit={(o) => { setEditingOffice(o); setIsEditOfficeModalOpen(true); }} onDelete={handleDesativarEscritorio} />}
             {activeTab === 'mapa' && (() => {
               const recursosDoOffice = recursos.filter(r => !selectedOffice || r.building === selectedOffice);

@@ -106,7 +106,13 @@ function MyBookings() {
     try {
       const startFormatado = reservaEditando.start_time.replace('T', ' ') + ':00';
       const endFormatado = reservaEditando.end_time.replace('T', ' ') + ':00';
-      await api.put(`/bookings/${reservaEditando.booking_id}`, { resource_id: reservaEditando.resource_id, start_time: startFormatado, end_time: endFormatado });
+      const guestEmails = (reservaEditando.guests || []).map(g => typeof g === 'string' ? g : g.email);
+      await api.put(`/bookings/${reservaEditando.booking_id}`, { 
+        resource_id: reservaEditando.resource_id, 
+        start_time: startFormatado, 
+        end_time: endFormatado,
+        guests: guestEmails
+      });
       toast.success("Reserva atualizada com sucesso!");
       setIsEditModalOpen(false);
       const response = await api.get(`/bookings`);
