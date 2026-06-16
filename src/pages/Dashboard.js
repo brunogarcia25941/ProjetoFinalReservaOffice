@@ -9,6 +9,28 @@ import SidebarFilters from '../components/layout/SidebarFilters';
 import Modal from '../components/ui/Modal';
 import GuestInput from '../components/forms/GuestInput';
 
+const formatarDataGoogle = (dataStr) => {
+  if (!dataStr) return '';
+  const d = new Date(dataStr.replace(' ', 'T'));
+  const ano = d.getUTCFullYear();
+  const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const dia = String(d.getUTCDate()).padStart(2, '0');
+  const horas = String(d.getUTCHours()).padStart(2, '0');
+  const minutos = String(d.getUTCMinutes()).padStart(2, '0');
+  const segundos = String(d.getUTCSeconds()).padStart(2, '0');
+  return `${ano}${mes}${dia}T${horas}${minutos}${segundos}Z`;
+};
+
+const gerarLinkGoogle = (nomeRecurso, tipoRecurso, startStr, endStr) => {
+  const startG = formatarDataGoogle(startStr);
+  const endG = formatarDataGoogle(endStr);
+  const titulo = encodeURIComponent(`Reserva: ${nomeRecurso}`);
+  const datas = `${startG}/${endG}`;
+  const localizacao = encodeURIComponent(`${nomeRecurso} - Escritório`);
+  const detalhes = encodeURIComponent(`Reserva realizada através do portal Reserva Office.\nRecurso: ${nomeRecurso} (${tipoRecurso})`);
+  return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${datas}&details=${detalhes}&location=${localizacao}`;
+};
+
 function Dashboard() {
   const [recursos, setRecursos] = useState([]);
   const [erro, setErro] = useState(null);
@@ -115,13 +137,37 @@ function Dashboard() {
     if (!roomBookingData) return;
     
     try {
-      await api.post(`/bookings`, { 
+      const payload = { 
         resource_id: roomBookingData.id, 
         start_time: roomBookingData.start_time, 
         end_time: roomBookingData.end_time,
         guests: roomBookingData.guests
-      });
-      toast.success(`Reserva para ${roomBookingData.name} efetuada com sucesso!`);
+      };
+
+      if (roomBookingData.isRecurring && roomBookingData.recurrenceType && roomBookingData.recurrenceEndDate) {
+        payload.recurrence = {
+          type: roomBookingData.recurrenceType,
+          endDate: roomBookingData.recurrenceEndDate + ' 23:59:59'
+        };
+      }
+
+      await api.post(`/bookings`, payload);
+      const gLink = gerarLinkGoogle(roomBookingData.name, 'room', roomBookingData.start_time, roomBookingData.end_time);
+      toast.success(({ closeToast }) => (
+        <div className="flex flex-col text-left">
+          <span>Reserva para <b>{roomBookingData.name}</b> efetuada com sucesso!</span>
+          <a 
+            href={gLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={closeToast}
+            className="mt-2 text-xs text-white bg-indigo-600 hover:bg-indigo-700 font-bold py-1.5 px-3 rounded-lg text-center inline-block transition-colors"
+          >
+            Adicionar ao Google Calendar
+          </a>
+        </div>
+      ), { autoClose: 8000 });
+
       setIsRoomBookingModalOpen(false);
       setRoomBookingData(null);
       carregarRecursosComDisponibilidade();
@@ -145,10 +191,32 @@ function Dashboard() {
         payload.extra_resource_id = deskBookingData.extra_resource_id;
       }
 
+      if (deskBookingData.isRecurring && deskBookingData.recurrenceType && deskBookingData.recurrenceEndDate) {
+        payload.recurrence = {
+          type: deskBookingData.recurrenceType,
+          endDate: deskBookingData.recurrenceEndDate + ' 23:59:59'
+        };
+      }
+
       await api.post(`/bookings`, payload);
       const deskObj = recursos.find(r => r.id === deskBookingData.id);
       const deskName = deskObj ? deskObj.name : 'Mesa';
-      toast.success(`Reserva para ${deskName} efetuada com sucesso!`);
+      const gLink = gerarLinkGoogle(deskName, 'desk', deskBookingData.start_time, deskBookingData.end_time);
+      toast.success(({ closeToast }) => (
+        <div className="flex flex-col text-left">
+          <span>Reserva para <b>{deskName}</b> efetuada com sucesso!</span>
+          <a 
+            href={gLink} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            onClick={closeToast}
+            className="mt-2 text-xs text-white bg-indigo-600 hover:bg-indigo-700 font-bold py-1.5 px-3 rounded-lg text-center inline-block transition-colors"
+          >
+            Adicionar ao Google Calendar
+          </a>
+        </div>
+      ), { autoClose: 8000 });
+
       setIsDeskBookingModalOpen(false);
       setDeskBookingData(null);
       carregarRecursosComDisponibilidade();
@@ -536,6 +604,57 @@ function Dashboard() {
               />
             </div>
 
+            <div className="pt-2 border-t border-gray-100 space-y-3">
+              <div 
+                className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                onClick={() => setRoomBookingData(prev => ({ 
+                  ...prev, 
+                  isRecurring: !prev.isRecurring,
+                  recurrenceType: prev.isRecurring ? '' : 'weekly',
+                  recurrenceEndDate: prev.isRecurring ? '' : prev.end_time.substring(0, 10)
+                }))}
+              >
+                <input
+                  type="checkbox"
+                  checked={!!roomBookingData.isRecurring}
+                  onChange={() => {}} // handled by click
+                  className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                />
+                <div className="flex flex-col text-left">
+                  <span className="text-sm font-semibold text-gray-800">Repetir esta reserva</span>
+                  <span className="text-xs text-gray-500">Criar uma série de reuniões recorrentes</span>
+                </div>
+              </div>
+
+              {roomBookingData.isRecurring && (
+                <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 animate-fade-in text-left">
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Repetição</label>
+                    <select
+                      value={roomBookingData.recurrenceType}
+                      onChange={(e) => setRoomBookingData(prev => ({ ...prev, recurrenceType: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white font-medium text-gray-700"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <option value="weekly">Semanalmente</option>
+                      <option value="daily">Diariamente</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Até à data</label>
+                    <input
+                      type="date"
+                      value={roomBookingData.recurrenceEndDate}
+                      onChange={(e) => setRoomBookingData(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-primary focus:border-primary outline-none font-medium text-gray-800"
+                      onClick={(e) => e.stopPropagation()}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="pt-4 flex gap-3">
               <button 
                 type="button"
@@ -639,6 +758,57 @@ function Dashboard() {
                         De momento, não existem monitores móveis disponíveis neste edifício para o horário selecionado.
                       </p>
                     )}
+                  </div>
+                )}
+              </div>
+
+              <div className="pt-2 border-t border-gray-100 space-y-3">
+                <div 
+                  className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => setDeskBookingData(prev => ({ 
+                    ...prev, 
+                    isRecurring: !prev.isRecurring,
+                    recurrenceType: prev.isRecurring ? '' : 'weekly',
+                    recurrenceEndDate: prev.isRecurring ? '' : prev.end_time.substring(0, 10)
+                  }))}
+                >
+                  <input
+                    type="checkbox"
+                    checked={!!deskBookingData.isRecurring}
+                    onChange={() => {}} // handled by click
+                    className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
+                  />
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-semibold text-gray-800">Repetir esta reserva</span>
+                    <span className="text-xs text-gray-500">Criar uma série de reservas recorrentes</span>
+                  </div>
+                </div>
+
+                {deskBookingData.isRecurring && (
+                  <div className="grid grid-cols-2 gap-3 p-3 bg-gray-50 rounded-xl border border-gray-100 animate-fade-in text-left">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Repetição</label>
+                      <select
+                        value={deskBookingData.recurrenceType}
+                        onChange={(e) => setDeskBookingData(prev => ({ ...prev, recurrenceType: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg p-2.5 text-xs focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white font-medium text-gray-700"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="weekly">Semanalmente</option>
+                        <option value="daily">Diariamente</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Até à data</label>
+                      <input
+                        type="date"
+                        value={deskBookingData.recurrenceEndDate}
+                        onChange={(e) => setDeskBookingData(prev => ({ ...prev, recurrenceEndDate: e.target.value }))}
+                        className="w-full border border-gray-300 rounded-lg p-2 text-xs focus:ring-2 focus:ring-primary focus:border-primary outline-none font-medium text-gray-800"
+                        onClick={(e) => e.stopPropagation()}
+                        required
+                      />
+                    </div>
                   </div>
                 )}
               </div>
