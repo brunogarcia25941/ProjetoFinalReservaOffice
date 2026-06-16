@@ -15,6 +15,7 @@ function Dashboard() {
   const [pisoFiltro, setPisoFiltro] = useState('');
   const [statusFiltro, setStatusFiltro] = useState('todos');
   const [tiposDesmarcados, setTiposDesmarcados] = useState([]);
+  const [apenasAcessiveis, setApenasAcessiveis] = useState(false);
   const [isRoomBookingModalOpen, setIsRoomBookingModalOpen] = useState(false);
   const [roomBookingData, setRoomBookingData] = useState(null);
   const [isDeskBookingModalOpen, setIsDeskBookingModalOpen] = useState(false);
@@ -169,6 +170,26 @@ function Dashboard() {
       return;
     }
 
+    const start = new Date(startTimeFormatado.replace(' ', 'T'));
+    const end = new Date(endTimeFormatado.replace(' ', 'T'));
+
+    // Validar se a duração da reserva não excede 1 mês
+    const maxEndDate = new Date(start);
+    maxEndDate.setMonth(maxEndDate.getMonth() + 1);
+    if (end > maxEndDate) {
+      toast.error("A duração da reserva não pode exceder o período máximo de 1 mês!");
+      return;
+    }
+
+    // Validar se a antecedência não excede 1 mês no futuro
+    const agora = new Date();
+    const limiteFuturo = new Date(agora);
+    limiteFuturo.setMonth(limiteFuturo.getMonth() + 1);
+    if (start > limiteFuturo) {
+      toast.error("Não é possível criar reservas com mais de 1 mês de antecedência!");
+      return;
+    }
+
     const recursoObj = recursos.find(r => r.id === id);
     const isRoom = recursoObj && recursoObj.type === 'room';
     const isDesk = recursoObj && recursoObj.type === 'desk';
@@ -230,6 +251,57 @@ function Dashboard() {
     ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
   };
 
+  const sugerirLugarAcessivel = () => {
+    // Procurar recursos ativos e não reservados que tenham accessible: true
+    const disponiveisAcessiveis = recursosDoOffice.filter(r => {
+      const isMaintenance = r.status === 'maintenance';
+      const isAlreadyBooked = r.is_booked === 1;
+      const isAvailable = !isMaintenance && !isAlreadyBooked;
+      if (!isAvailable) return false;
+
+      let featuresObj = {};
+      if (r.features) {
+        try {
+          featuresObj = typeof r.features === 'string' ? JSON.parse(r.features) : r.features;
+        } catch (e) {
+          return false;
+        }
+      }
+      return !!featuresObj.accessible;
+    });
+
+    if (disponiveisAcessiveis.length === 0) {
+      toast.info("De momento, não existem lugares acessíveis (PMR) livres neste edifício para o horário selecionado.");
+      return;
+    }
+
+    // Sugerir o primeiro disponível
+    const sugerido = disponiveisAcessiveis[0];
+    
+    toast(({ closeToast }) => (
+      <div className="flex flex-col">
+        <h4 className="font-bold text-gray-800 mb-1 text-base flex items-center gap-1.5">
+          <span>♿ Sugestão de Lugar Acessível</span>
+        </h4>
+        <p className="text-sm text-gray-600 mb-4">
+          Sugerimos a <b>{sugerido.name}</b> (Piso {sugerido.floor}) que está livre e adaptada a PMR.
+        </p>
+        <div className="flex gap-2">
+          <button 
+            onClick={() => { 
+              closeToast(); 
+              reservarRecurso(sugerido.id, sugerido.name); 
+            }} 
+            className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
+          >
+            Reservar
+          </button>
+          <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors">Voltar</button>
+        </div>
+      </div>
+    ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
+  };
+
   const recursosDoOffice = recursos.filter(r => !selectedOffice || r.building === selectedOffice);
   const pisosDisponiveis = [...new Set(recursosDoOffice.map(r => r.floor))].filter(Boolean).sort();
   const tiposDisponiveis = [...new Set(recursosDoOffice.map(r => r.type))].filter(Boolean).sort();
@@ -248,7 +320,20 @@ function Dashboard() {
     else if (statusFiltro === 'ocupado') passaStatus = isAlreadyBooked && !isMaintenance;
     else if (statusFiltro === 'manutencao') passaStatus = isMaintenance;
     const passaTipo = !tiposDesmarcados.includes(r.type);
-    return passaPiso && passaStatus && passaTipo;
+    
+    // Filtro de Acessibilidade
+    let passaAcessibilidade = true;
+    if (apenasAcessiveis) {
+      let featuresObj = {};
+      if (r.features) {
+        try {
+          featuresObj = typeof r.features === 'string' ? JSON.parse(r.features) : r.features;
+        } catch(e) {}
+      }
+      passaAcessibilidade = !!featuresObj.accessible;
+    }
+
+    return passaPiso && passaStatus && passaTipo && passaAcessibilidade;
   });
 
   return (
@@ -266,25 +351,36 @@ function Dashboard() {
           tiposDisponiveis={tiposDisponiveis}
           tiposDesmarcados={tiposDesmarcados} setTiposDesmarcados={setTiposDesmarcados}
           traduzirTipo={traduzirTipo}
+          apenasAcessiveis={apenasAcessiveis}
+          setApenasAcessiveis={setApenasAcessiveis}
         />
 
-        <main className="flex-1 bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-          <div className="flex justify-between items-center mb-6 border-b border-gray-100 pb-4">
+        <main className="flex-1 bg-white border border-gray-200 rounded-xl p-4 sm:p-6 shadow-sm overflow-hidden">
+          <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6 border-b border-gray-100 pb-4">
             <div>
-              <h2 className="text-xl font-bold text-gray-800">Seleciona um recurso para reservar</h2>
-              <p className="text-sm text-gray-500">A mostrar {recursosFiltrados.length} recurso(s) {pisoFiltro ? `no Piso ${pisoFiltro}` : 'em todos os pisos'}.</p>
+              <h2 className="text-lg sm:text-xl font-bold text-gray-800">Seleciona um recurso para reservar</h2>
+              <p className="text-xs sm:text-sm text-gray-500">A mostrar {recursosFiltrados.length} recurso(s) {pisoFiltro ? `no Piso ${pisoFiltro}` : 'em todos os pisos'}.</p>
             </div>
-            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200">
-              <button onClick={() => setVista('grelha')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'grelha' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Grelha</button>
-              <button onClick={() => setVista('mapa')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'mapa' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Mapa</button>
-            </div>
-            <div className="flex gap-2 text-xs font-medium">
-              {['disponivel', 'ocupado', 'manutencao'].map(s => (
-                <button key={s} onClick={() => setStatusFiltro(statusFiltro === s ? 'todos' : s)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === s ? 'bg-primary-soft border-primary-light shadow-sm text-primary-hover' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}>
-                  <span className={`w-3 h-3 rounded-full border ${s === 'disponivel' ? 'bg-success-light border-success' : s === 'ocupado' ? 'bg-gray-200 border-gray-400' : 'bg-admin-light border-admin'}`}></span>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </button>
-              ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={sugerirLugarAcessivel}
+                className="bg-primary-soft hover:bg-primary-light text-primary-hover border border-primary-light hover:border-primary transition-all font-bold px-3 py-1.5 rounded-lg text-xs flex items-center gap-1.5 shadow-sm cursor-pointer"
+                title="Sugerir um lugar acessível disponível"
+              >
+                <span>♿ Sugerir Lugar Acessível</span>
+              </button>
+              <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200 w-fit">
+                <button onClick={() => setVista('grelha')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'grelha' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Grelha</button>
+                <button onClick={() => setVista('mapa')} className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${vista === 'mapa' ? 'bg-white shadow-sm text-primary' : 'text-gray-500 hover:text-gray-700'}`}>Mapa</button>
+              </div>
+              <div className="flex flex-wrap gap-2 text-xs font-medium">
+                {['disponivel', 'ocupado', 'manutencao'].map(s => (
+                  <button key={s} onClick={() => setStatusFiltro(statusFiltro === s ? 'todos' : s)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border transition-all ${statusFiltro === s ? 'bg-primary-soft border-primary-light shadow-sm text-primary-hover' : 'bg-transparent border-transparent hover:bg-gray-50 text-gray-600'}`}>
+                    <span className={`w-3 h-3 rounded-full border ${s === 'disponivel' ? 'bg-success-light border-success' : s === 'ocupado' ? 'bg-gray-200 border-gray-400' : 'bg-admin-light border-admin'}`}></span>
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -295,6 +391,40 @@ function Dashboard() {
               <p className="text-sm mt-1">A hora de fim tem de ser posterior à hora de início.</p>
             </div>
           )}
+
+          {(() => {
+            if (!dataInicio || !dataFim) return null;
+            const start = new Date(dataInicio);
+            const end = new Date(dataFim);
+            if (start >= end) return null;
+
+            const maxEndDate = new Date(start);
+            maxEndDate.setMonth(maxEndDate.getMonth() + 1);
+            
+            const agora = new Date();
+            const limiteFuturo = new Date(agora);
+            limiteFuturo.setMonth(limiteFuturo.getMonth() + 1);
+
+            if (end > maxEndDate) {
+              return (
+                <div className="bg-warning-soft text-warning-hover p-8 rounded-lg mb-6 text-center border border-dashed border-warning-light animate-fade-in">
+                  <h4 className="font-bold text-lg">Duração Excedida</h4>
+                  <p className="text-sm mt-1">A duração máxima permitida para uma reserva é de 1 mês.</p>
+                </div>
+              );
+            }
+
+            if (start > limiteFuturo) {
+              return (
+                <div className="bg-warning-soft text-warning-hover p-8 rounded-lg mb-6 text-center border border-dashed border-warning-light animate-fade-in">
+                  <h4 className="font-bold text-lg">Antecedência Não Permitida</h4>
+                  <p className="text-sm mt-1">Não é possível agendar recursos com mais de 1 mês de antecedência.</p>
+                </div>
+              );
+            }
+
+            return null;
+          })()}
 
           {isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && (
             <div className="bg-warning-soft text-warning-hover p-8 rounded-xl mb-6 text-center border border-dashed border-warning-light">
@@ -312,8 +442,10 @@ function Dashboard() {
                   <button key={piso} onClick={() => setPisoFiltro(String(piso))} className={`px-4 py-1.5 rounded-md text-xs font-bold transition-all ${String(pisoFiltro || pisosDisponiveis[0] || 1) === String(piso) ? 'bg-primary text-white shadow-sm' : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-200'}`}>Piso {piso}</button>
                 ))}
               </div>
-              <div className="border border-gray-100 rounded-xl overflow-hidden shadow-inner bg-gray-50">
-                <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || pisosDisponiveis[0] || 1} />
+              <div className="border border-gray-100 rounded-xl overflow-x-auto shadow-inner bg-gray-50 w-full">
+                <div className="min-w-[800px] overflow-hidden">
+                  <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || pisosDisponiveis[0] || 1} />
+                </div>
               </div>
             </div>
           ) : (
@@ -346,7 +478,18 @@ function Dashboard() {
                           ) : (
                             <svg className={`w-6 h-6 mb-2 ${isAvailable ? 'text-success' : isAlreadyBooked ? 'text-gray-400' : 'text-admin'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6a2 2 0 012-2h12a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 10h2v5a2 2 0 01-2 2H10a2 2 0 01-2-2v-5h2zm-4 0h4v5h-4v-5zm-6 0h2v5a2 2 0 002 2h0v-5H4v5a2 2 0 01-2-2v-5h2z"></path></svg>
                           )}
-                          <span className="font-bold text-xs text-gray-800 truncate w-full mb-1">{recurso.name}</span>
+                          <span className="font-bold text-xs text-gray-800 truncate w-full mb-1 flex items-center justify-center gap-1">
+                            {(() => {
+                              let featuresObj = {};
+                              if (recurso.features) {
+                                try {
+                                  featuresObj = typeof recurso.features === 'string' ? JSON.parse(recurso.features) : recurso.features;
+                                } catch(e) {}
+                              }
+                              return !!featuresObj.accessible && <span title="Lugar Acessível (PMR)" className="text-blue-500 font-semibold">♿</span>;
+                            })()}
+                            {recurso.name}
+                          </span>
                           <span className="text-[10px] text-gray-400">Piso {recurso.floor}</span>
                           <span className={`mt-2 text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${isAvailable ? 'bg-success-light text-success-hover' : isMaintenance ? 'bg-admin-light text-admin' : 'bg-gray-100 text-gray-700'}`}>{isAvailable ? 'Livre' : isMaintenance ? 'Em Manutenção' : 'Ocupada'}</span>
                         </div>

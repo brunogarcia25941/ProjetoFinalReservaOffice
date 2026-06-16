@@ -249,13 +249,13 @@ function AdminDashboard() {
       <Navbar user={user} logout={handleLogout} isAdmin={true} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex justify-between items-center mb-6">
-          <div className="flex gap-2">
+        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+          <div className="flex flex-wrap md:flex-nowrap gap-2 overflow-x-auto pb-2 w-full lg:w-auto scrollbar-thin">
             {['reservas', 'utilizadores', 'recursos', 'mapa', 'escritorios'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2 font-bold rounded-lg transition-all duration-200 capitalize ${activeTab === tab ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
+                className={`px-4 sm:px-5 py-2 font-bold rounded-lg transition-all duration-200 capitalize text-sm whitespace-nowrap ${activeTab === tab ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
               >
                 {tab === 'mapa' ? 'Mapa do Escritório' : tab === 'utilizadores' ? 'Lista de Colaboradores' : tab === 'escritorios' ? 'Gestão de Escritórios' : tab === 'reservas' ? 'Visão Geral de Reservas' : tab}
               </button>
@@ -263,21 +263,21 @@ function AdminDashboard() {
           </div>
 
           {activeTab === 'utilizadores' && (
-            <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
+            <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
               Registar Novo Colaborador
             </button>
           )}
 
           {activeTab === 'recursos' && (
-            <button onClick={() => { setNovoRecurso(prev => ({ ...prev, building: selectedOffice || 'Edifício Principal' })); setIsRecursoModalOpen(true); }} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
+            <button onClick={() => { setNovoRecurso(prev => ({ ...prev, building: selectedOffice || 'Edifício Principal' })); setIsRecursoModalOpen(true); }} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Adicionar Novo Recurso
             </button>
           )}
 
           {activeTab === 'escritorios' && (
-            <button onClick={() => setIsOfficeModalOpen(true)} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center gap-2 hover:shadow-md active:scale-95">
+            <button onClick={() => setIsOfficeModalOpen(true)} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Adicionar Novo Escritório
             </button>
@@ -322,7 +322,11 @@ function AdminDashboard() {
                       <button key={piso} onClick={() => setPisoSelecionado(piso)} className={`px-4 py-2 rounded-lg font-bold transition-all ${pisoAtualVal === piso ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Piso {piso}</button>
                     ))}
                   </div>
-                  <PlantaEditor recursos={recursosDoOffice.filter(r => Number(r.floor) === pisoAtualVal)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoAtualVal} modoAdmin={true} />
+                  <div className="border border-gray-100 rounded-xl overflow-x-auto shadow-inner bg-gray-50 w-full">
+                    <div className="min-w-[800px] overflow-hidden">
+                      <PlantaEditor recursos={recursosDoOffice.filter(r => Number(r.floor) === pisoAtualVal)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoAtualVal} modoAdmin={true} />
+                    </div>
+                  </div>
                 </div>
               );
             })()}

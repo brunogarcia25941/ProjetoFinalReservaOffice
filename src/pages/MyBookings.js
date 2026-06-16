@@ -46,7 +46,7 @@ function MyBookings() {
       try {
         await api.put(`/bookings/${id}/cancel`, {});
         toast.success('Reserva cancelada com sucesso!');
-        setReservas(prev => prev.map(r => r.booking_id == id ? { ...r, status: 'cancelled' } : r));
+        setReservas(prev => prev.map(r => Number(r.booking_id) === Number(id) ? { ...r, status: 'cancelled' } : r));
       } catch (error) {
         toast.error('Erro ao cancelar a reserva.');
       }
@@ -90,7 +90,7 @@ function MyBookings() {
   };
 
   const abrirModalEdicao = (idReserva) => {
-    const reserva = reservas.find(r => r.booking_id == idReserva);
+    const reserva = reservas.find(r => Number(r.booking_id) === Number(idReserva));
     if (reserva) {
       setReservaEditando({
         ...reserva,
@@ -104,6 +104,32 @@ function MyBookings() {
 
   const atualizarReserva = async (e) => {
     e.preventDefault();
+    const start = new Date(reservaEditando.start_time);
+    const end = new Date(reservaEditando.end_time);
+
+    // Validar se data de fim é posterior à data de início
+    if (start >= end) {
+      toast.error("A data de fim deve ser posterior à data de início.");
+      return;
+    }
+
+    // Validar se a duração da reserva não excede 1 mês
+    const maxEndDate = new Date(start);
+    maxEndDate.setMonth(maxEndDate.getMonth() + 1);
+    if (end > maxEndDate) {
+      toast.error("A duração da reserva não pode exceder o período máximo de 1 mês!");
+      return;
+    }
+
+    // Validar se a antecedência não excede 1 mês no futuro
+    const agora = new Date();
+    const limiteFuturo = new Date(agora);
+    limiteFuturo.setMonth(limiteFuturo.getMonth() + 1);
+    if (start > limiteFuturo) {
+      toast.error("Não é possível alterar a reserva para uma data com mais de 1 mês de antecedência!");
+      return;
+    }
+
     try {
       const startFormatado = reservaEditando.start_time.replace('T', ' ') + ':00';
       const endFormatado = reservaEditando.end_time.replace('T', ' ') + ':00';
@@ -125,16 +151,16 @@ function MyBookings() {
   };
 
   const eventosCalendario = reservas
-    .filter(r => r.status === 'confirmed')
+    .filter(r => r.status === 'confirmed' || r.status === 'completed')
     .map(r => ({
       id: r.booking_id,
-      title: r.resource_name + (r.extra ? ` (+ ${r.extra.resource_name})` : ''), 
+      title: r.resource_name + (r.extra ? ` (+ ${r.extra.resource_name})` : '') + (r.status === 'completed' ? ' (Concluída)' : ''), 
       start: r.start_time.replace(' ', 'T'), 
       end: r.end_time.replace(' ', 'T'),
-      backgroundColor: '#2563eb',
-      borderColor: '#1d4ed8',
+      backgroundColor: r.status === 'completed' ? '#9ca3af' : '#2563eb', // cinza para concluída
+      borderColor: r.status === 'completed' ? '#6b7280' : '#1d4ed8',
       textColor: '#ffffff',
-      extendedProps: { nomeRecurso: r.resource_name, startTime: r.start_time, endTime: r.end_time }
+      extendedProps: { nomeRecurso: r.resource_name, startTime: r.start_time, endTime: r.end_time, status: r.status }
     }));
 
   const handleEventClick = (clickInfo) => {
@@ -142,9 +168,28 @@ function MyBookings() {
     const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
     
     // Encontrar monitor extra
-    const bookingObj = reservas.find(r => r.booking_id == idReserva);
+    const bookingObj = reservas.find(r => Number(r.booking_id) === Number(idReserva));
     const extraText = bookingObj && bookingObj.extra ? ` + ${bookingObj.extra.resource_name}` : '';
     
+    // Se a reserva já foi concluída
+    if (bookingObj && bookingObj.status === 'completed') {
+      toast(({ closeToast }) => (
+        <div className="flex flex-col animate-fade-in text-left">
+          <h4 className="font-bold text-gray-800 mb-1 text-base">Visualizar Reserva</h4>
+          <p className="text-sm text-gray-600 mb-4">A tua reserva para a <b>{nomeDoRecurso}{extraText}</b> está concluída.</p>
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-xs text-gray-500">
+            <p className="mb-1"><strong>Início:</strong> {new Date(bookingObj.start_time.replace(' ', 'T')).toLocaleString('pt-PT')}</p>
+            <p className="mb-1"><strong>Fim:</strong> {new Date(bookingObj.end_time.replace(' ', 'T')).toLocaleString('pt-PT')}</p>
+            <p className="mt-2 text-success font-semibold flex items-center gap-1.5 text-sm">
+              <span className="w-2.5 h-2.5 rounded-full bg-success inline-block"></span> Estado: Concluída
+            </p>
+          </div>
+          <button onClick={closeToast} className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 rounded-lg text-sm transition-colors">Fechar</button>
+        </div>
+      ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
+      return;
+    }
+
     // Verificar se a reserva está a decorrer agora
     const now = new Date();
     const startTime = new Date(clickInfo.event.extendedProps.startTime);
@@ -152,7 +197,7 @@ function MyBookings() {
     const isOngoing = now >= startTime && now < endTime;
 
     toast(({ closeToast }) => (
-      <div className="flex flex-col">
+      <div className="flex flex-col text-left">
         <h4 className="font-bold text-gray-800 mb-1 text-base">Gerir Reserva</h4>
         <p className="text-sm text-gray-600 mb-4">O que pretendes fazer com a reserva de <b>{nomeDoRecurso}{extraText}</b>?</p>
         

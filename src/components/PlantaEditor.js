@@ -77,7 +77,18 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
           className="absolute z-50 bg-white px-3 py-2 rounded-lg shadow-xl border border-gray-200 pointer-events-none transform -translate-x-1/2 -translate-y-full mb-2 animate-fade-in"
           style={{ left: tooltipPos.x, top: tooltipPos.y - 10 }}
         >
-          <div className="font-bold text-gray-800 text-sm">{tooltipData.name}</div>
+          <div className="font-bold text-gray-800 text-sm flex items-center gap-1">
+            {(() => {
+              let featuresObj = {};
+              if (tooltipData.features) {
+                try {
+                  featuresObj = typeof tooltipData.features === 'string' ? JSON.parse(tooltipData.features) : tooltipData.features;
+                } catch(e) {}
+              }
+              return !!featuresObj.accessible && <span title="Lugar Acessível (PMR)" className="text-blue-500 font-semibold">♿</span>;
+            })()}
+            {tooltipData.name}
+          </div>
           <div className="text-xs text-gray-500 capitalize">{tooltipData.type === 'desk' ? 'Mesa' : tooltipData.type} - Piso {tooltipData.floor}</div>
           
           <div className="mt-2 border-t pt-2">
@@ -139,143 +150,145 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
       )}
 
       <div
-        className={modoAdmin ? "lg:col-span-3 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px] " : "w-full  rounded-xl border-2 border-dashed border-gray-300 overflow-hidden relative flex justify-center items-center h-[500px]"}
+        className={modoAdmin ? "lg:col-span-3 bg-gray-100 rounded-xl border-2 border-dashed border-gray-300 overflow-x-auto relative flex items-center h-[500px] justify-start lg:justify-center" : "w-full rounded-xl border-2 border-dashed border-gray-300 overflow-x-auto relative flex items-center h-[500px] justify-start lg:justify-center"}
         onDragOver={(e) => e.preventDefault()} 
         onDrop={handleStageDrop}
       >
-        <Stage
-          width={800}
-          height={500}
-          ref={stageRef}
-          className="bg-white shadow-inner cursor-grab active:cursor-grabbing"
-          scaleX={scale}
-          scaleY={scale}
-          x={position.x}
-          y={position.y}
-          onWheel={handleWheel}
-          draggable={!draggedResourceId} 
-          onDragEnd={(e) => {
-            if (e.target === stageRef.current) {
-              setPosition({ x: e.target.x(), y: e.target.y() });
-            }
-          }}
-        >
-          <Layer>
-            {imageObj && (
-              <Image
-                image={imageObj}
-                width={800}
-                height={500}
-                opacity={0.5} 
-              />
-            )}
+        <div className="min-w-[800px]">
+          <Stage
+            width={800}
+            height={500}
+            ref={stageRef}
+            className="bg-white shadow-inner cursor-grab active:cursor-grabbing"
+            scaleX={scale}
+            scaleY={scale}
+            x={position.x}
+            y={position.y}
+            onWheel={handleWheel}
+            draggable={!draggedResourceId} 
+            onDragEnd={(e) => {
+              if (e.target === stageRef.current) {
+                setPosition({ x: e.target.x(), y: e.target.y() });
+              }
+            }}
+          >
+            <Layer>
+              {imageObj && (
+                <Image
+                  image={imageObj}
+                  width={800}
+                  height={500}
+                  opacity={0.5} 
+                />
+              )}
 
-            {recursos.filter(r => r.pos_x !== null && r.pos_x !== undefined).map(recurso => (
-              <Group
-                key={recurso.id}
-                x={recurso.pos_x}
-                y={recurso.pos_y}
-                rotation={recurso.rotation || 0}
-                draggable={modoAdmin} 
+              {recursos.filter(r => r.pos_x !== null && r.pos_x !== undefined).map(recurso => (
+                <Group
+                  key={recurso.id}
+                  x={recurso.pos_x}
+                  y={recurso.pos_y}
+                  rotation={recurso.rotation || 0}
+                  draggable={modoAdmin} 
 
-                onDragEnd={(e) => {
-                  if (!modoAdmin) return;
-                  const grid = 25; 
-                  const node = e.target;
-                  const novoX = Math.round(node.x() / grid) * grid;
-                  const novoY = Math.round(node.y() / grid) * grid;
+                  onDragEnd={(e) => {
+                    if (!modoAdmin) return;
+                    const grid = 25; 
+                    const node = e.target;
+                    const novoX = Math.round(node.x() / grid) * grid;
+                    const novoY = Math.round(node.y() / grid) * grid;
 
-                  node.position({ x: novoX, y: novoY });
+                    node.position({ x: novoX, y: novoY });
 
-                  const rotacaoAtual = recurso.rotation || 0;
-                  salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
-                }}
+                    const rotacaoAtual = recurso.rotation || 0;
+                    salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
+                  }}
 
-                onClick={() => {
-                  if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
-                    reservarRecurso(recurso.id, recurso.name);
-                  }
-                }}
+                  onClick={() => {
+                    if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                      reservarRecurso(recurso.id, recurso.name);
+                    }
+                  }}
 
-                onMouseEnter={(e) => {
-                  const stage = e.target.getStage();
-                  const container = stage.container();
-                  
-                  // Mudar cursor se puder reservar
-                  if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
-                    container.style.cursor = 'pointer';
-                  }
-
-                  // Calcular posição do rato relativa ao contentor DOM
-                  if (containerRef.current) {
-                    const pointerPos = stage.getPointerPosition();
-                    // Como a div do stage pode ter margens/padding ou estar ao lado da sidebar no admin,
-                    // calculamos a posição absoluta relativa ao wrapper mais próximo.
-                    const stageBox = container.getBoundingClientRect();
-                    const parentBox = containerRef.current.getBoundingClientRect();
+                  onMouseEnter={(e) => {
+                    const stage = e.target.getStage();
+                    const container = stage.container();
                     
-                    setTooltipPos({
-                      x: pointerPos.x + (stageBox.left - parentBox.left),
-                      y: pointerPos.y + (stageBox.top - parentBox.top)
-                    });
-                    setTooltipData(recurso);
-                  }
-                }}
-                
-                onMouseLeave={(e) => {
-                  e.target.getStage().container().style.cursor = 'default';
-                  setTooltipData(null);
-                }}
-              >
-                <Rect
-                  width={recurso.type === 'room' ? 120 : 60}
-                  height={recurso.type === 'room' ? 80 : 40}
-                  fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
-                  cornerRadius={4}
-                  shadowBlur={5}
-                  shadowOpacity={0.2}
-                  stroke={recurso.status === 'maintenance' ? '#991b1b' : (recurso.is_booked ? '#4b5563' : '#15803d')}
-                  strokeWidth={1}
-                />
+                    // Mudar cursor se puder reservar
+                    if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                      container.style.cursor = 'pointer';
+                    }
 
-                <Text
-                  text={recurso.name}
-                  fontSize={10}
-                  fill="white"
-                  listening={false}
-                  width={recurso.type === 'room' ? 120 : 60}
-                  height={recurso.type === 'room' ? 80 : 40}
-                  padding={5}
-                  align="center"
-                  verticalAlign="middle"
-                />
-                
-                {modoAdmin && (
-                  <>
-                    <Group
-                      x={45} y={25}
-                      onClick={() => {
-                        const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
-                        salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
-                      }}
-                    >
-                      <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
-                      <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
-                    </Group>
+                    // Calcular posição do rato relativa ao contentor DOM
+                    if (containerRef.current) {
+                      const pointerPos = stage.getPointerPosition();
+                      // Como a div do stage pode ter margens/padding ou estar ao lado da sidebar no admin,
+                      // calculamos a posição absoluta relativa ao wrapper mais próximo.
+                      const stageBox = container.getBoundingClientRect();
+                      const parentBox = containerRef.current.getBoundingClientRect();
+                      
+                      setTooltipPos({
+                        x: pointerPos.x + (stageBox.left - parentBox.left),
+                        y: pointerPos.y + (stageBox.top - parentBox.top)
+                      });
+                      setTooltipData(recurso);
+                    }
+                  }}
+                  
+                  onMouseLeave={(e) => {
+                    e.target.getStage().container().style.cursor = 'default';
+                    setTooltipData(null);
+                  }}
+                >
+                  <Rect
+                    width={recurso.type === 'room' ? 120 : 60}
+                    height={recurso.type === 'room' ? 80 : 40}
+                    fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
+                    cornerRadius={4}
+                    shadowBlur={5}
+                    shadowOpacity={0.2}
+                    stroke={recurso.status === 'maintenance' ? '#991b1b' : (recurso.is_booked ? '#4b5563' : '#15803d')}
+                    strokeWidth={1}
+                  />
 
-                    <Group
-                      x={45} y={-5}
-                      onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
-                    >
-                      <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
-                      <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
-                    </Group>
-                  </>
-                )}
-              </Group>
-            ))}
-          </Layer>
-        </Stage>
+                  <Text
+                    text={recurso.name}
+                    fontSize={10}
+                    fill="white"
+                    listening={false}
+                    width={recurso.type === 'room' ? 120 : 60}
+                    height={recurso.type === 'room' ? 80 : 40}
+                    padding={5}
+                    align="center"
+                    verticalAlign="middle"
+                  />
+                  
+                  {modoAdmin && (
+                    <>
+                      <Group
+                        x={45} y={25}
+                        onClick={() => {
+                          const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
+                          salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
+                        }}
+                      >
+                        <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
+                        <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
+                      </Group>
+
+                      <Group
+                        x={45} y={-5}
+                        onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
+                      >
+                        <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
+                        <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                      </Group>
+                    </>
+                  )}
+                </Group>
+              ))}
+            </Layer>
+          </Stage>
+        </div>
       </div>
     </div>
   );

@@ -110,7 +110,8 @@ function ResourceForm({ resource, onSubmit, onChange, picklists, isEdit = false 
                 { key: 'wifi', label: 'Wi-Fi' },
                 { key: 'projector', label: 'Projetor' },
                 { key: 'tv', label: 'Televisor/Ecrã' },
-                { key: 'whiteboard', label: 'Quadro Branco' }
+                { key: 'whiteboard', label: 'Quadro Branco' },
+                { key: 'accessible', label: 'Acessibilidade (♿ PMR)' }
               ].map(f => (
                 <label key={f.key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-800">
                   <input 
@@ -131,7 +132,8 @@ function ResourceForm({ resource, onSubmit, onChange, picklists, isEdit = false 
             {[
               { key: 'standing_desk', label: 'Standing Desk' },
               { key: 'window_seat', label: 'Junto à Janela' },
-              { key: 'dual_monitor', label: 'Monitor Duplo' }
+              { key: 'dual_monitor', label: 'Monitor Duplo' },
+              { key: 'accessible', label: 'Acessibilidade (♿ PMR)' }
             ].map(f => (
               <label key={f.key} className="flex items-center gap-2 cursor-pointer text-sm text-gray-600 hover:text-gray-800">
                 <input 

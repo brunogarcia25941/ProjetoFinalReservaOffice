@@ -16,7 +16,9 @@ function SidebarFilters({
   tiposDisponiveis,
   tiposDesmarcados,
   setTiposDesmarcados,
-  traduzirTipo
+  traduzirTipo,
+  apenasAcessiveis,
+  setApenasAcessiveis
 }) {
   return (
     <aside className="w-full md:w-64 flex-shrink-0 space-y-6">
@@ -107,7 +109,7 @@ function SidebarFilters({
           </div>
         </div>
 
-        <div className="mb-5">
+        <div className="mb-4">
           <label className="text-xs font-semibold text-gray-600 mb-2 block">LOCALIZAÇÃO (PISO)</label>
           <select
             value={pisoFiltro}
@@ -119,6 +121,18 @@ function SidebarFilters({
               <option key={piso} value={piso}>Piso {piso}</option>
             ))}
           </select>
+        </div>
+
+        <div className="mb-5 border-t border-gray-100 pt-4">
+          <label className="flex items-center gap-2 cursor-pointer p-1 rounded hover:bg-gray-50 transition-colors">
+            <input
+              type="checkbox"
+              checked={apenasAcessiveis}
+              onChange={(e) => setApenasAcessiveis(e.target.checked)}
+              className="rounded text-primary focus:ring-primary w-4 h-4 cursor-pointer border-gray-300"
+            />
+            <span className="text-xs font-semibold text-gray-750">Apenas Acessibilidade (♿ PMR)</span>
+          </label>
         </div>
 
         {tiposDisponiveis.length > 0 && (
