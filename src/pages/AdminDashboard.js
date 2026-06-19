@@ -43,25 +43,29 @@ function AdminDashboard() {
   const { data: utilizadores = [], isError: isErrorUsers } = useQuery({
     queryKey: ['utilizadores'],
     queryFn: () => api.get(`/admin/users`).then(res => res.data),
-    enabled: !!token
+    enabled: !!token,
+    refetchInterval: 10000
   });
 
   const { data: todasReservas = [] } = useQuery({
     queryKey: ['reservas'],
     queryFn: () => api.get(`/bookings/all`).then(res => res.data),
-    enabled: !!token
+    enabled: !!token,
+    refetchInterval: 10000
   });
 
   const { data: recursos = [] } = useQuery({
     queryKey: ['recursos'],
     queryFn: () => api.get(`/resources`).then(res => res.data),
-    enabled: !!token
+    enabled: !!token,
+    refetchInterval: 10000
   });
 
   const { data: officesList = [] } = useQuery({
     queryKey: ['escritorios'],
     queryFn: () => api.get(`/offices`).then(res => res.data),
-    enabled: !!token
+    enabled: !!token,
+    refetchInterval: 10000
   });
 
   const { data: picklists = { roles: [], resourceTypes: [], resourceStatuses: [] } } = useQuery({

@@ -75,6 +75,11 @@ function TicketsDashboard() {
   useEffect(() => {
     carregarTickets();
     carregarRecursos();
+    const interval = setInterval(() => {
+      carregarTickets();
+      carregarRecursos();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [carregarTickets, carregarRecursos]);
 
   const handleCreateTicket = async (e) => {

@@ -126,6 +126,10 @@ function Dashboard() {
 
   useEffect(() => {
     carregarRecursosComDisponibilidade();
+    const interval = setInterval(() => {
+      carregarRecursosComDisponibilidade();
+    }, 10000);
+    return () => clearInterval(interval);
   }, [carregarRecursosComDisponibilidade]);
 
   useEffect(() => {

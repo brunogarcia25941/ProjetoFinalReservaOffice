@@ -76,16 +76,22 @@ function MyBookings() {
   };
 
   useEffect(() => {
-    api.get(`/bookings`)
-      .then((response) => setReservas(response.data))
-      .catch((error) => {
-        console.error("Erro na API:", error);
-        setErro("Não foi possível carregar as tuas reservas.");
-      });
+    const buscarDados = () => {
+      api.get(`/bookings`)
+        .then((response) => setReservas(response.data))
+        .catch((error) => {
+          console.error("Erro na API:", error);
+          setErro("Não foi possível carregar as tuas reservas.");
+        });
 
-    api.get(`/resources`)
-      .then((response) => setRecursos(response.data))
-      .catch((error) => console.error("Erro ao carregar recursos:", error));
+      api.get(`/resources`)
+        .then((response) => setRecursos(response.data))
+        .catch((error) => console.error("Erro ao carregar recursos:", error));
+    };
+
+    buscarDados();
+    const interval = setInterval(buscarDados, 10000);
+    return () => clearInterval(interval);
   }, [token]);
 
   const cancelarReserva = async (id, nomeRecurso) => {

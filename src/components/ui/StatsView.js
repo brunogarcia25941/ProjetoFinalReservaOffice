@@ -6,7 +6,7 @@ function StatsView() {
   const { data: stats, isLoading, isError } = useQuery({
     queryKey: ['stats'],
     queryFn: () => api.get(`/admin/stats`).then(res => res.data),
-    refetchInterval: 30000 // Refresca a cada 30 segundos
+    refetchInterval: 10000 // Refresca a cada 10 segundos
   });
 
   if (isLoading) {
