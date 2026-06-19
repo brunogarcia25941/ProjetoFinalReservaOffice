@@ -15,8 +15,6 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
   const [tooltipData, setTooltipData] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
-  const [gridSize, setGridSize] = useState(10); // Snap por defeito em 10px (mais livre)
-
   const currentOfficeName = officeName || 'Edifício Principal';
 
   const [layoutConfig, setLayoutConfig] = useState({
@@ -132,8 +130,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     stageRef.current.setPointersPositions(e);
     const pointerPosition = stageRef.current.getPointerPosition();
 
-    const snappedX = Math.round(pointerPosition.x / gridSize) * gridSize;
-    const snappedY = Math.round(pointerPosition.y / gridSize) * gridSize;
+    const snappedX = Math.round(pointerPosition.x);
+    const snappedY = Math.round(pointerPosition.y);
 
     setRecursos(recursosAnteriores =>
       recursosAnteriores.map(rec =>
@@ -184,21 +182,6 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                 onChange={(e) => setLayoutConfig(prev => ({ ...prev, map_height: parseInt(e.target.value) || 500 }))}
                 className="w-24 text-xs border rounded p-2"
               />
-            </div>
-
-            {/* Seletor de Snap Grid */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1">Snap Grid</label>
-              <select
-                value={gridSize}
-                onChange={(e) => setGridSize(parseInt(e.target.value) || 1)}
-                className="text-xs border rounded p-2 bg-white font-medium text-gray-700 focus:outline-none cursor-pointer"
-              >
-                <option value="1">Sem Snap (Livre)</option>
-                <option value="5">Snap 5px</option>
-                <option value="10">Snap 10px</option>
-                <option value="25">Snap 25px</option>
-              </select>
             </div>
 
             {/* Criar/Restaurar Planta Vazia */}
@@ -403,8 +386,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     onDragEnd={(e) => {
                       if (!modoAdmin) return;
                       const node = e.target;
-                      const snappedX = Math.round(node.x() / gridSize) * gridSize;
-                      const snappedY = Math.round(node.y() / gridSize) * gridSize;
+                      const snappedX = Math.round(node.x());
+                      const snappedY = Math.round(node.y());
                       node.position({ x: snappedX, y: snappedY });
                       setLayoutConfig(prev => ({
                         ...prev,
@@ -517,10 +500,9 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
 
                     onDragEnd={(e) => {
                       if (!modoAdmin) return;
-                      const grid = 25; 
                       const node = e.target;
-                      const novoX = Math.round(node.x() / grid) * grid;
-                      const novoY = Math.round(node.y() / grid) * grid;
+                      const novoX = Math.round(node.x());
+                      const novoY = Math.round(node.y());
 
                       node.position({ x: novoX, y: novoY });
 
