@@ -15,6 +15,9 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
   const [tooltipData, setTooltipData] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+  // Estado para posicionar recursos em ecrãs touch (clique para colocar no mapa)
+  const [selectedResourceToPlace, setSelectedResourceToPlace] = useState(null);
+
   const currentOfficeName = officeName || 'Edifício Principal';
 
   const [layoutConfig, setLayoutConfig] = useState({
@@ -143,6 +146,40 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
 
     salvarCoordenadasNaBD(draggedResourceId, snappedX, snappedY);
     setDraggedResourceId(null);
+  };
+
+  const handleMapClickOrTap = (e) => {
+    if (modoAdmin && selectedResourceToPlace) {
+      const targetName = e.target.name();
+      // Ignora se o clique for em cima de um recurso já posicionado ou dos seus botões de controlo
+      if (targetName && (targetName.startsWith('recurso') || targetName.startsWith('button'))) {
+        return;
+      }
+
+      const stage = stageRef.current;
+      if (!stage) return;
+
+      const pointerPos = stage.getPointerPosition();
+      if (!pointerPos) return;
+
+      // Traduz as coordenadas do clique do rato/toque para as coordenadas reais do plano do mapa (considerando escala e translação)
+      const transform = stage.getAbsoluteTransform().copy().invert();
+      const relativePos = transform.point(pointerPos);
+
+      const snappedX = Math.round(relativePos.x);
+      const snappedY = Math.round(relativePos.y);
+
+      setRecursos(recursosAnteriores =>
+        recursosAnteriores.map(rec =>
+          rec.id === selectedResourceToPlace
+            ? { ...rec, pos_x: snappedX, pos_y: snappedY }
+            : rec
+        )
+      );
+
+      salvarCoordenadasNaBD(selectedResourceToPlace, snappedX, snappedY);
+      setSelectedResourceToPlace(null);
+    }
   };
 
   return (
@@ -303,13 +340,34 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
         {modoAdmin && (
           <div className="bg-gray-50 p-4 rounded-xl border border-gray-200 h-[500px] overflow-y-auto relative z-10">
             <h4 className="font-semibold text-gray-700 mb-3 text-sm border-b pb-2">Mesas / Salas Disponíveis</h4>
+            {selectedResourceToPlace && (
+              <div className="bg-primary-soft border border-primary-light text-primary text-xs p-2.5 rounded-lg mb-3 flex flex-col gap-1 shadow-sm">
+                <div className="flex justify-between items-center">
+                  <span className="font-bold">Modo de Toque Ativo</span>
+                  <button 
+                    type="button" 
+                    onClick={(e) => { e.stopPropagation(); setSelectedResourceToPlace(null); }} 
+                    className="font-bold text-red-500 hover:text-red-700 text-xs px-1"
+                  >
+                    Cancelar
+                  </button>
+                </div>
+                <p className="text-[10px] text-gray-600">Toque em qualquer ponto no mapa para posicionar este recurso.</p>
+              </div>
+            )}
             <div className="space-y-2">
               {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).map(recurso => (
                 <div
                   key={recurso.id}
                   draggable
                   onDragStart={() => handleStageDragStart(recurso.id)}
-                  className="bg-white p-3 rounded-lg border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing hover:border-blue-500 transition-colors flex items-center justify-between"
+                  onClick={() => {
+                    setSelectedResourceToPlace(recurso.id);
+                  }}
+                  onTouchStart={() => {
+                    setSelectedResourceToPlace(recurso.id);
+                  }}
+                  className={`bg-white p-3 rounded-lg border shadow-sm cursor-grab active:cursor-grabbing transition-colors flex items-center justify-between hover:border-blue-500 ${selectedResourceToPlace === recurso.id ? 'border-primary ring-2 ring-primary-soft bg-primary-soft/10' : 'border-gray-200'}`}
                 >
                   <div>
                     <span className="font-medium text-gray-800 block text-sm">{recurso.name}</span>
@@ -352,6 +410,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   setPosition({ x: e.target.x(), y: e.target.y() });
                 }
               }}
+              onClick={handleMapClickOrTap}
+              onTap={handleMapClickOrTap}
             >
               <Layer>
                 {/* Limites e grelha visual para a planta vazia */}
@@ -545,6 +605,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     }}
                   >
                     <Rect
+                      name="recurso-shape"
                       width={recurso.type === 'room' ? 120 : 60}
                       height={recurso.type === 'room' ? 80 : 40}
                       fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
@@ -556,6 +617,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     />
 
                     <Text
+                      name="recurso-text"
                       text={recurso.name}
                       fontSize={10}
                       fill="white"
@@ -571,18 +633,20 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       <>
                         {/* Rodar 90º (Azul) */}
                         <Group
+                          name="button-control"
                           x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 55 : 15}
                           onClick={() => {
                             const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
                             salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
                           }}
                         >
-                          <Rect width={18} height={18} fill="#60a5fa" cornerRadius={9} />
-                          <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
+                          <Rect name="button-control" width={18} height={18} fill="#60a5fa" cornerRadius={9} />
+                          <Text name="button-control" text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
                         </Group>
 
                         {/* Rotação Livre (Roxo) */}
                         <Group
+                          name="button-control"
                           x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 35 : -5}
                           onClick={() => {
                             const newAngle = prompt("Introduza o ângulo de rotação em graus (0-360):", recurso.rotation || 0);
@@ -591,17 +655,18 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                             }
                           }}
                         >
-                          <Rect width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
-                          <Text text="∡" fill="white" fontSize={12} width={18} align="center" y={2} />
+                          <Rect name="button-control" width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
+                          <Text name="button-control" text="∡" fill="white" fontSize={12} width={18} align="center" y={2} />
                         </Group>
 
                         {/* Eliminar (Vermelho/Branco) */}
                         <Group
+                          name="button-control"
                           x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 15 : -25}
                           onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
                         >
-                          <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
-                          <Text text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                          <Rect name="button-control" width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
+                          <Text name="button-control" text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
                         </Group>
                       </>
                     )}

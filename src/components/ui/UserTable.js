@@ -4,15 +4,15 @@ function UserTable({ users, picklists, onEdit, onDelete }) {
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-600 table-fixed min-w-[800px]">
+        <table className="w-full text-left text-sm text-gray-600 table-auto min-w-[800px] lg:min-w-full">
           <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
             <tr>
-              <th className="px-6 py-4 font-semibold">ID</th>
-              <th className="px-6 py-4 font-semibold">Nome Completo</th>
-              <th className="px-6 py-4 font-semibold">Email</th>
-              <th className="px-6 py-4 font-semibold">Escritório Base</th>
-              <th className="px-6 py-4 font-semibold">Cargo (Role)</th>
-              <th className="px-6 py-4 font-semibold text-center">Ações</th>
+              <th className="px-6 py-4 font-semibold w-16">ID</th>
+              <th className="px-6 py-4 font-semibold w-1/4">Nome Completo</th>
+              <th className="px-6 py-4 font-semibold w-1/4">Email</th>
+              <th className="px-6 py-4 font-semibold w-40">Escritório Base</th>
+              <th className="px-6 py-4 font-semibold w-32">Cargo (Role)</th>
+              <th className="px-6 py-4 font-semibold text-center w-48">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">

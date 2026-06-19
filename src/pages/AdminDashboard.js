@@ -252,7 +252,7 @@ function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
-          <div className="flex flex-wrap md:flex-nowrap gap-2 overflow-x-auto pb-2 w-full lg:w-auto scrollbar-thin">
+          <div className="flex flex-wrap lg:flex-nowrap gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 w-full lg:w-auto scrollbar-none">
             {['reservas', 'utilizadores', 'recursos', 'mapa', 'escritorios', 'pedidos', 'estatisticas'].map((tab) => (
               <button
                 key={tab}
@@ -326,8 +326,8 @@ function AdminDashboard() {
                       <button key={piso} onClick={() => setPisoSelecionado(piso)} className={`px-4 py-2 rounded-lg font-bold transition-all ${pisoAtualVal === piso ? 'bg-primary text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>Piso {piso}</button>
                     ))}
                   </div>
-                  <div className="border border-gray-100 rounded-xl overflow-x-auto shadow-inner bg-gray-50 w-full">
-                    <div className="min-w-[800px] overflow-hidden">
+                  <div className="border border-gray-100 rounded-xl overflow-x-auto lg:overflow-x-hidden shadow-inner bg-gray-50 w-full">
+                    <div className="min-w-[800px] lg:min-w-0 overflow-hidden">
                       <PlantaEditor recursos={recursosDoOffice.filter(r => Number(r.floor) === pisoAtualVal)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoAtualVal} modoAdmin={true} officeName={selectedOffice} />
                     </div>
                   </div>

@@ -43,7 +43,7 @@ function RegistrationRequestsTable() {
   return (
     <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-fade-in">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm text-gray-600 table-fixed min-w-[900px]">
+        <table className="w-full text-left text-sm text-gray-600 table-auto min-w-[900px] lg:min-w-full">
           <thead className="bg-gray-50 border-b border-gray-200 text-gray-700">
             <tr>
               <th className="px-6 py-4 font-semibold w-16">ID</th>

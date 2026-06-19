@@ -4,7 +4,7 @@ function OfficeTable({ offices, onEdit, onDelete }) {
   return (
     <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm table-fixed min-w-[800px]">
+        <table className="w-full text-left text-sm table-auto min-w-[800px] lg:min-w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
               <th className="px-6 py-4 font-semibold w-1/4">Nome</th>

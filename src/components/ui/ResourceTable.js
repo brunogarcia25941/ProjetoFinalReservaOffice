@@ -35,15 +35,15 @@ function ResourceTable({ resources, onEdit, onDelete }) {
   return (
     <div className="bg-white border rounded-xl shadow-sm overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm table-fixed min-w-[800px]">
+        <table className="w-full text-left text-sm table-auto min-w-[800px] lg:min-w-full">
           <thead className="bg-gray-50 border-b">
             <tr>
-              <th className="px-6 py-4 font-semibold">Nome</th>
-              <th className="px-6 py-4 font-semibold">Tipo</th>
-              <th className="px-6 py-4 font-semibold">Edifício</th>
-              <th className="px-6 py-4 font-semibold">Piso</th>
-              <th className="px-6 py-4 font-semibold">Estado</th>
-              <th className="px-6 py-4 font-semibold text-center">Ações</th>
+              <th className="px-6 py-4 font-semibold w-1/3">Nome</th>
+              <th className="px-6 py-4 font-semibold w-24">Tipo</th>
+              <th className="px-6 py-4 font-semibold w-1/4">Edifício</th>
+              <th className="px-6 py-4 font-semibold w-24">Piso</th>
+              <th className="px-6 py-4 font-semibold w-24">Estado</th>
+              <th className="px-6 py-4 font-semibold text-center w-48">Ações</th>
             </tr>
           </thead>
           <tbody className="divide-y">
