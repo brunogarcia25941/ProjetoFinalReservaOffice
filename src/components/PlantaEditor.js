@@ -18,6 +18,9 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
   // Estado para posicionar recursos em ecrãs touch (clique para colocar no mapa)
   const [selectedResourceToPlace, setSelectedResourceToPlace] = useState(null);
 
+  // Estado para controlar qual o elemento (parede ou recurso) selecionado para ações no admin
+  const [selectedElementId, setSelectedElementId] = useState(null);
+
   const currentOfficeName = officeName || 'Edifício Principal';
 
   const [layoutConfig, setLayoutConfig] = useState({
@@ -149,6 +152,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
   };
 
   const handleMapClickOrTap = (e) => {
+    // 1. Posicionar recurso selecionado (se houver)
     if (modoAdmin && selectedResourceToPlace) {
       const targetName = e.target.name();
       // Ignora se o clique for em cima de um recurso já posicionado ou dos seus botões de controlo
@@ -179,6 +183,17 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
 
       salvarCoordenadasNaBD(selectedResourceToPlace, snappedX, snappedY);
       setSelectedResourceToPlace(null);
+      return;
+    }
+
+    // 2. Limpar a seleção se clicar no fundo do mapa (Stage, Image de fundo ou Rect de grelha de fundo)
+    if (modoAdmin) {
+      const target = e.target;
+      const targetName = target.name();
+      const isBackground = target === stageRef.current || target.className === 'Image' || (target.className === 'Rect' && targetName !== 'recurso-shape' && !targetName.startsWith('button') && targetName !== 'parede-shape');
+      if (isBackground) {
+        setSelectedElementId(null);
+      }
     }
   };
 
@@ -222,7 +237,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
             </div>
 
             {/* Criar/Restaurar Planta Vazia */}
-            <div className="flex items-end h-[38px]">
+            <div className="flex flex-col justify-end">
+              <span className="block text-xs font-semibold text-transparent mb-1 select-none" aria-hidden="true">Alinhamento</span>
               {layoutConfig.map_image === 'vazia' ? (
                 <button
                   type="button"
@@ -254,35 +270,41 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
             </div>
 
             {/* Adicionar parede */}
-            <button
-              type="button"
-              onClick={() => {
-                const newWall = {
-                  id: 'wall_' + Date.now(),
-                  x: 100,
-                  y: 100,
-                  width: 150,
-                  height: 15,
-                  rotation: 0
-                };
-                setLayoutConfig(prev => ({
-                  ...prev,
-                  walls: [...(prev.walls || []), newWall]
-                }));
-              }}
-              className="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors self-end h-[38px] cursor-pointer"
-            >
-              <span>+ Adicionar Parede</span>
-            </button>
+            <div className="flex flex-col justify-end">
+              <span className="block text-xs font-semibold text-transparent mb-1 select-none" aria-hidden="true">Alinhamento</span>
+              <button
+                type="button"
+                onClick={() => {
+                  const newWall = {
+                    id: 'wall_' + Date.now(),
+                    x: 100,
+                    y: 100,
+                    width: 150,
+                    height: 15,
+                    rotation: 0
+                  };
+                  setLayoutConfig(prev => ({
+                    ...prev,
+                    walls: [...(prev.walls || []), newWall]
+                  }));
+                }}
+                className="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors h-[38px] cursor-pointer"
+              >
+                <span>+ Adicionar Parede</span>
+              </button>
+            </div>
           </div>
 
-          <button
-            type="button"
-            onClick={handleSaveLayout}
-            className="bg-primary hover:bg-primary-hover text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors self-end h-[38px] cursor-pointer"
-          >
-            Guardar Configuração da Planta
-          </button>
+          <div className="flex flex-col justify-end">
+            <span className="block text-xs font-semibold text-transparent mb-1 select-none" aria-hidden="true">Alinhamento</span>
+            <button
+              type="button"
+              onClick={handleSaveLayout}
+              className="bg-primary hover:bg-primary-hover text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors h-[38px] cursor-pointer"
+            >
+              Guardar Configuração da Planta
+            </button>
+          </div>
         </div>
       )}
 
@@ -443,6 +465,26 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     y={wall.y}
                     rotation={wall.rotation || 0}
                     draggable={modoAdmin}
+                    onClick={(e) => {
+                      if (!modoAdmin) return;
+                      e.cancelBubble = true;
+                      setSelectedElementId(wall.id);
+                    }}
+                    onTap={(e) => {
+                      if (!modoAdmin) return;
+                      e.cancelBubble = true;
+                      setSelectedElementId(wall.id);
+                    }}
+                    onMouseEnter={(e) => {
+                      if (modoAdmin) {
+                        e.target.getStage().container().style.cursor = 'move';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (modoAdmin) {
+                        e.target.getStage().container().style.cursor = 'default';
+                      }
+                    }}
                     onDragEnd={(e) => {
                       if (!modoAdmin) return;
                       const node = e.target;
@@ -456,6 +498,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     }}
                   >
                     <Rect
+                      name="parede-shape"
                       width={wall.width}
                       height={wall.height}
                       fill="#4b5563"
@@ -464,13 +507,14 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       opacity={0.85}
                       cornerRadius={2}
                     />
-                    {modoAdmin && (
+                    {modoAdmin && selectedElementId === wall.id && (
                       <>
                         {/* Botão Eliminar Parede (Vermelho) */}
                         <Group
                           x={wall.width - 25}
                           y={-22}
                           onClick={() => {
+                            setSelectedElementId(null);
                             setLayoutConfig(prev => ({
                               ...prev,
                               walls: prev.walls.filter(w => w.id !== wall.id)
@@ -570,8 +614,20 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       salvarCoordenadasNaBD(recurso.id, novoX, novoY, rotacaoAtual);
                     }}
 
-                    onClick={() => {
-                      if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                    onClick={(e) => {
+                      if (modoAdmin) {
+                        e.cancelBubble = true;
+                        setSelectedElementId(recurso.id);
+                      } else if (!recurso.is_booked && recurso.status === 'active') {
+                        reservarRecurso(recurso.id, recurso.name);
+                      }
+                    }}
+
+                    onTap={(e) => {
+                      if (modoAdmin) {
+                        e.cancelBubble = true;
+                        setSelectedElementId(recurso.id);
+                      } else if (!recurso.is_booked && recurso.status === 'active') {
                         reservarRecurso(recurso.id, recurso.name);
                       }
                     }}
@@ -580,8 +636,13 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       const stage = e.target.getStage();
                       const container = stage.container();
                       
+                      if (modoAdmin) {
+                        container.style.cursor = 'move';
+                        return;
+                      }
+
                       // Mudar cursor se puder reservar
-                      if (!modoAdmin && !recurso.is_booked && recurso.status === 'active') {
+                      if (!recurso.is_booked && recurso.status === 'active') {
                         container.style.cursor = 'pointer';
                       }
 
@@ -601,6 +662,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     
                     onMouseLeave={(e) => {
                       e.target.getStage().container().style.cursor = 'default';
+                      if (modoAdmin) return;
                       setTooltipData(null);
                     }}
                   >
@@ -629,7 +691,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       verticalAlign="middle"
                     />
                     
-                    {modoAdmin && (
+                    {modoAdmin && selectedElementId === recurso.id && (
                       <>
                         {/* Rodar 90º (Azul) */}
                         <Group
@@ -663,7 +725,10 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                         <Group
                           name="button-control"
                           x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 15 : -25}
-                          onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
+                          onClick={() => {
+                            setSelectedElementId(null);
+                            salvarCoordenadasNaBD(recurso.id, null, null, 0);
+                          }}
                         >
                           <Rect name="button-control" width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
                           <Text name="button-control" text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />

@@ -255,7 +255,8 @@ function AdminDashboard() {
       <Navbar user={user} logout={handleLogout} isAdmin={true} />
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
+        {/* Menu de Abas */}
+        <div className="mb-4 border-b border-gray-200 pb-4">
           <div className="flex flex-wrap lg:flex-nowrap gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 w-full lg:w-auto scrollbar-none">
             {['reservas', 'utilizadores', 'recursos', 'mapa', 'escritorios', 'pedidos', 'estatisticas'].map((tab) => (
               <button
@@ -267,23 +268,26 @@ function AdminDashboard() {
               </button>
             ))}
           </div>
+        </div>
 
+        {/* Zona de ações rápidas com altura fixa para evitar saltos (layout shifts) nas tabelas */}
+        <div className="h-14 flex items-center justify-start mb-4">
           {activeTab === 'utilizadores' && (
-            <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
+            <button onClick={() => setIsModalOpen(true)} className="bg-primary hover:bg-primary-hover text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 text-xs w-full sm:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"></path></svg>
               Registar Novo Colaborador
             </button>
           )}
 
           {activeTab === 'recursos' && (
-            <button onClick={() => { setNovoRecurso(prev => ({ ...prev, building: selectedOffice || 'Edifício Principal' })); setIsRecursoModalOpen(true); }} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
+            <button onClick={() => { setNovoRecurso(prev => ({ ...prev, building: selectedOffice || 'Edifício Principal' })); setIsRecursoModalOpen(true); }} className="bg-success hover:bg-success-hover text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 text-xs w-full sm:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Adicionar Novo Recurso
             </button>
           )}
 
           {activeTab === 'escritorios' && (
-            <button onClick={() => setIsOfficeModalOpen(true)} className="bg-success hover:bg-success-hover text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 w-full lg:w-auto">
+            <button onClick={() => setIsOfficeModalOpen(true)} className="bg-success hover:bg-success-hover text-white px-4 py-2.5 rounded-lg font-medium shadow-sm transition-all duration-200 flex items-center justify-center gap-2 hover:shadow-md active:scale-95 text-xs w-full sm:w-auto">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
               Adicionar Novo Escritório
             </button>
