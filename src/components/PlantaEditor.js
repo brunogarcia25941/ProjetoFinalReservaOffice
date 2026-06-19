@@ -15,6 +15,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
   const [tooltipData, setTooltipData] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
+  const [gridSize, setGridSize] = useState(10); // Snap por defeito em 10px (mais livre)
+
   const currentOfficeName = officeName || 'Edifício Principal';
 
   const [layoutConfig, setLayoutConfig] = useState({
@@ -49,12 +51,14 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     api.get(`/offices/layout?office_name=${encodeURIComponent(currentOfficeName)}&floor=${pisoAtual}`)
       .then(response => {
         setLayoutConfig(response.data);
-        if (response.data.map_image) {
+        if (response.data.map_image && response.data.map_image !== 'vazia') {
           const img = new window.Image();
           img.src = response.data.map_image;
           img.onload = () => {
             setImageObj(img);
           };
+        } else if (response.data.map_image === 'vazia') {
+          setImageObj(null); // Planta Vazia
         } else {
           // Fallback para a planta estática
           const img = new window.Image();
@@ -128,9 +132,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     stageRef.current.setPointersPositions(e);
     const pointerPosition = stageRef.current.getPointerPosition();
 
-    const grid = 25; 
-    const snappedX = Math.round(pointerPosition.x / grid) * grid;
-    const snappedY = Math.round(pointerPosition.y / grid) * grid;
+    const snappedX = Math.round(pointerPosition.x / gridSize) * gridSize;
+    const snappedY = Math.round(pointerPosition.y / gridSize) * gridSize;
 
     setRecursos(recursosAnteriores =>
       recursosAnteriores.map(rec =>
@@ -183,6 +186,53 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
               />
             </div>
 
+            {/* Seletor de Snap Grid */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1">Snap Grid</label>
+              <select
+                value={gridSize}
+                onChange={(e) => setGridSize(parseInt(e.target.value) || 1)}
+                className="text-xs border rounded p-2 bg-white font-medium text-gray-700 focus:outline-none cursor-pointer"
+              >
+                <option value="1">Sem Snap (Livre)</option>
+                <option value="5">Snap 5px</option>
+                <option value="10">Snap 10px</option>
+                <option value="25">Snap 25px</option>
+              </select>
+            </div>
+
+            {/* Criar/Restaurar Planta Vazia */}
+            <div className="flex items-end h-[38px]">
+              {layoutConfig.map_image === 'vazia' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLayoutConfig(prev => ({ ...prev, map_image: null }));
+                    const img = new window.Image();
+                    img.src = `/planta${pisoAtual}.png`;
+                    img.onload = () => {
+                      setImageObj(img);
+                    };
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 text-xs font-bold py-2 px-3 rounded-lg shadow-sm h-[38px] transition-colors cursor-pointer"
+                >
+                  Restaurar Planta Padrão
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLayoutConfig(prev => ({ ...prev, map_image: 'vazia' }));
+                    setImageObj(null);
+                  }}
+                  className="bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 text-xs font-bold py-2 px-3 rounded-lg shadow-sm h-[38px] transition-colors cursor-pointer"
+                  title="Criar uma planta em branco com as dimensões especificadas"
+                >
+                  Criar Planta Vazia
+                </button>
+              )}
+            </div>
+
             {/* Adicionar parede */}
             <button
               type="button"
@@ -200,7 +250,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                   walls: [...(prev.walls || []), newWall]
                 }));
               }}
-              className="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors self-end h-[38px]"
+              className="bg-gray-800 hover:bg-gray-900 text-white text-xs font-bold py-2 px-3 rounded-lg shadow-sm flex items-center gap-1.5 transition-colors self-end h-[38px] cursor-pointer"
             >
               <span>+ Adicionar Parede</span>
             </button>
@@ -209,7 +259,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
           <button
             type="button"
             onClick={handleSaveLayout}
-            className="bg-primary hover:bg-primary-hover text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors self-end h-[38px]"
+            className="bg-primary hover:bg-primary-hover text-white text-xs font-bold py-2 px-4 rounded-lg shadow-sm transition-colors self-end h-[38px] cursor-pointer"
           >
             Guardar Configuração da Planta
           </button>
@@ -321,6 +371,18 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
               }}
             >
               <Layer>
+                {/* Limites e grelha visual para a planta vazia */}
+                {!imageObj && (
+                  <Rect
+                    width={layoutConfig.map_width}
+                    height={layoutConfig.map_height}
+                    fill="#ffffff"
+                    stroke="#cbd5e1"
+                    strokeWidth={2}
+                    dash={[5, 5]}
+                  />
+                )}
+
                 {imageObj && (
                   <Image
                     image={imageObj}
@@ -341,9 +403,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     onDragEnd={(e) => {
                       if (!modoAdmin) return;
                       const node = e.target;
-                      const grid = 25;
-                      const snappedX = Math.round(node.x() / grid) * grid;
-                      const snappedY = Math.round(node.y() / grid) * grid;
+                      const snappedX = Math.round(node.x() / gridSize) * gridSize;
+                      const snappedY = Math.round(node.y() / gridSize) * gridSize;
                       node.position({ x: snappedX, y: snappedY });
                       setLayoutConfig(prev => ({
                         ...prev,
@@ -377,7 +438,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                           <Text text="×" fill="white" fontSize={14} width={18} align="center" y={0} fontStyle="bold" />
                         </Group>
 
-                        {/* Botão Rodar Parede (Azul) */}
+                        {/* Botão Rodar Parede 90º (Azul) */}
                         <Group
                           x={wall.width - 5}
                           y={-22}
@@ -392,9 +453,27 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                           <Text text="↻" fill="white" fontSize={12} width={18} align="center" y={2} />
                         </Group>
 
-                        {/* Botão Largura Parede (Verde) */}
+                        {/* Botão Rotação Livre (Roxo) */}
                         <Group
                           x={wall.width + 15}
+                          y={-22}
+                          onClick={() => {
+                            const newAngle = prompt("Introduza o ângulo de rotação em graus (0-360):", wall.rotation || 0);
+                            if (newAngle !== null) {
+                              setLayoutConfig(prev => ({
+                                ...prev,
+                                walls: prev.walls.map(w => w.id === wall.id ? { ...w, rotation: parseInt(newAngle) || 0 } : w)
+                              }));
+                            }
+                          }}
+                        >
+                          <Rect width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
+                          <Text text="∡" fill="white" fontSize={11} width={18} align="center" y={3} fontStyle="bold" />
+                        </Group>
+
+                        {/* Botão Largura Parede (Verde) */}
+                        <Group
+                          x={wall.width + 35}
                           y={-22}
                           onClick={() => {
                             const newWidth = prompt("Introduza a largura da parede (px):", wall.width) || wall.width;
@@ -410,7 +489,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
 
                         {/* Botão Espessura Parede (Laranja) */}
                         <Group
-                          x={wall.width + 35}
+                          x={wall.width + 55}
                           y={-22}
                           onClick={() => {
                             const newHeight = prompt("Introduza a espessura da parede (px):", wall.height) || wall.height;
@@ -508,6 +587,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                     
                     {modoAdmin && (
                       <>
+                        {/* Rodar 90º (Azul) */}
                         <Group
                           x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 55 : 15}
                           onClick={() => {
@@ -519,8 +599,23 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                           <Text text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
                         </Group>
 
+                        {/* Rotação Livre (Roxo) */}
                         <Group
-                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? -15 : -15}
+                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 35 : -5}
+                          onClick={() => {
+                            const newAngle = prompt("Introduza o ângulo de rotação em graus (0-360):", recurso.rotation || 0);
+                            if (newAngle !== null) {
+                              salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, parseInt(newAngle) || 0);
+                            }
+                          }}
+                        >
+                          <Rect width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
+                          <Text text="∡" fill="white" fontSize={12} width={18} align="center" y={2} />
+                        </Group>
+
+                        {/* Eliminar (Vermelho/Branco) */}
+                        <Group
+                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 15 : -25}
                           onClick={() => salvarCoordenadasNaBD(recurso.id, null, null, 0)}
                         >
                           <Rect width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
