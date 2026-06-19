@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState } from 'react';
 import api from '../api/axiosConfig';
 import { useQuery } from '@tanstack/react-query';
 
@@ -115,7 +115,7 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout, selectedOffice, setSelectedOffice, offices }}>
+    <AuthContext.Provider value={{ token, user, setUser, login, logout, selectedOffice, setSelectedOffice, offices }}>
       {children}
     </AuthContext.Provider>
   );

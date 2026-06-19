@@ -15,6 +15,7 @@ import UserForm from '../components/forms/UserForm';
 import ResourceForm from '../components/forms/ResourceForm';
 import OfficeForm from '../components/forms/OfficeForm';
 import StatsView from '../components/ui/StatsView';
+import RegistrationRequestsTable from '../components/ui/RegistrationRequestsTable';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('reservas');
@@ -252,13 +253,13 @@ function AdminDashboard() {
       <main className="max-w-7xl mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row lg:justify-between lg:items-center gap-4 mb-6">
           <div className="flex flex-wrap md:flex-nowrap gap-2 overflow-x-auto pb-2 w-full lg:w-auto scrollbar-thin">
-            {['reservas', 'utilizadores', 'recursos', 'mapa', 'escritorios', 'estatisticas'].map((tab) => (
+            {['reservas', 'utilizadores', 'recursos', 'mapa', 'escritorios', 'pedidos', 'estatisticas'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-4 sm:px-5 py-2 font-bold rounded-lg transition-all duration-200 capitalize text-sm whitespace-nowrap ${activeTab === tab ? 'bg-gray-900 text-white shadow-md' : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'}`}
               >
-                {tab === 'mapa' ? 'Mapa do Escritório' : tab === 'utilizadores' ? 'Lista de Colaboradores' : tab === 'escritorios' ? 'Gestão de Escritórios' : tab === 'reservas' ? 'Visão Geral de Reservas' : tab === 'estatisticas' ? 'Estatísticas de Ocupação' : tab}
+                {tab === 'mapa' ? 'Mapa do Escritório' : tab === 'utilizadores' ? 'Lista de Colaboradores' : tab === 'escritorios' ? 'Gestão de Escritórios' : tab === 'reservas' ? 'Visão Geral de Reservas' : tab === 'estatisticas' ? 'Estatísticas de Ocupação' : tab === 'pedidos' ? 'Pedidos de Registo' : tab}
               </button>
             ))}
           </div>
@@ -294,6 +295,7 @@ function AdminDashboard() {
             {activeTab === 'reservas' && <BookingTable bookings={todasReservas} />}
             {activeTab === 'estatisticas' && <StatsView />}
             {activeTab === 'utilizadores' && <UserTable users={utilizadores} picklists={picklists} onEdit={(u) => { setEditingUser(u); setIsEditModalOpen(true); }} onDelete={handleEliminarUtilizador} />}
+            {activeTab === 'pedidos' && <RegistrationRequestsTable />}
             {activeTab === 'recursos' && (
               <ResourceTable 
                 resources={recursos.filter(r => !selectedOffice || r.building === selectedOffice)} 
@@ -326,7 +328,7 @@ function AdminDashboard() {
                   </div>
                   <div className="border border-gray-100 rounded-xl overflow-x-auto shadow-inner bg-gray-50 w-full">
                     <div className="min-w-[800px] overflow-hidden">
-                      <PlantaEditor recursos={recursosDoOffice.filter(r => Number(r.floor) === pisoAtualVal)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoAtualVal} modoAdmin={true} />
+                      <PlantaEditor recursos={recursosDoOffice.filter(r => Number(r.floor) === pisoAtualVal)} setRecursos={(novos) => queryClient.setQueryData(['recursos'], novos)} salvarCoordenadasNaBD={salvarCoordenadasNaBD} pisoAtual={pisoAtualVal} modoAdmin={true} officeName={selectedOffice} />
                     </div>
                   </div>
                 </div>

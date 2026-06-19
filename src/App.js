@@ -11,16 +11,30 @@ import TicketsDashboard from './pages/TicketsDashboard';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
+import ForcePasswordChange from './components/ForcePasswordChange';
+
 // Componente para proteger rotas que exigem login
 const RotaPrivada = ({ children }) => {
-  const { token } = useContext(AuthContext);
-  return token ? children : <Navigate to="/login" />;
+  const { token, user } = useContext(AuthContext);
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
+  if (user?.must_change_password) {
+    return <ForcePasswordChange />;
+  }
+  return children;
 };
 
 // Componente para proteger rotas exclusivas de Admin
 const RotaAdmin = ({ children }) => {
   const { user, token } = useContext(AuthContext);
-  return (token && user?.role === 'admin') ? children : <Navigate to="/dashboard" />;
+  if (!token || user?.role !== 'admin') {
+    return <Navigate to="/dashboard" />;
+  }
+  if (user?.must_change_password) {
+    return <ForcePasswordChange />;
+  }
+  return children;
 };
 
 // --- CONFIGURAÇÃO DE ROTAS EM ARRAYS ---

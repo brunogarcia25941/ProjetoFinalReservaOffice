@@ -512,7 +512,7 @@ function Dashboard() {
               </div>
               <div className="border border-gray-100 rounded-xl overflow-x-auto shadow-inner bg-gray-50 w-full">
                 <div className="min-w-[800px] overflow-hidden">
-                  <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || pisosDisponiveis[0] || 1} />
+                  <PlantaEditor recursos={recursosFiltrados} modoAdmin={false} reservarRecurso={reservarRecurso} pisoAtual={pisoFiltro || pisosDisponiveis[0] || 1} officeName={selectedOffice} />
                 </div>
               </div>
             </div>

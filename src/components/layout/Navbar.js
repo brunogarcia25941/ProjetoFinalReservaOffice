@@ -29,7 +29,10 @@ function Navbar({ user, logout, isAdmin = false }) {
       <div className="flex justify-between items-center max-w-7xl mx-auto">
         {/* Brand/Logo Section */}
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
+          <Link
+            to={isAdmin ? "/admin" : "/dashboard"}
+            className="flex items-center gap-2 hover:opacity-90 transition-opacity cursor-pointer"
+          >
             <div className="rounded-lg">
               <img
                 src="/logo.png"
@@ -40,7 +43,7 @@ function Navbar({ user, logout, isAdmin = false }) {
             <span className={`text-lg sm:text-xl font-bold ${textClass} truncate max-w-[180px] sm:max-w-none`}>
               {isAdmin ? "Admin - Reserva Office" : "Reserva Office"}
             </span>
-          </div>
+          </Link>
 
           {/* Desktop Office Selector */}
           {offices && offices.length > 0 && (
