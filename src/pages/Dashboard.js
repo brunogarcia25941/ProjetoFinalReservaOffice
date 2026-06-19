@@ -685,8 +685,8 @@ function Dashboard() {
       >
         {deskBookingData && (() => {
           const deskObj = recursos.find(r => r.id === deskBookingData.id);
-          const monitorsDisponiveis = deskObj ? recursos.filter(r => 
-            r.type === 'monitor' && 
+          const extrasDisponiveis = deskObj ? recursos.filter(r => 
+            ['monitor', 'mouse', 'keyboard', 'headphones', 'hdmi_cable', 'network_cable', 'webcam', 'hdmi_vga_adapter', 'pc_charger'].includes(r.type) && 
             r.status === 'active' &&
             r.is_booked !== 1 &&
             r.building === deskObj.building
@@ -721,7 +721,7 @@ function Dashboard() {
                     return { 
                       ...prev, 
                       hasExtra: nextHasExtra, 
-                      extra_resource_id: nextHasExtra ? (monitorsDisponiveis[0]?.id || null) : null 
+                      extra_resource_id: nextHasExtra ? (extrasDisponiveis[0]?.id || null) : null 
                     };
                   })}
                 >
@@ -731,35 +731,42 @@ function Dashboard() {
                     onChange={() => {}} // handled by click on parent div
                     className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
                   />
-                  <div className="flex flex-col">
-                    <span className="text-sm font-semibold text-gray-800">Adicionar Monitor Extra Móvel</span>
-                    <span className="text-xs text-gray-500">Selecione um monitor livre neste edifício</span>
+                  <div className="flex flex-col text-left">
+                    <span className="text-sm font-semibold text-gray-800">Adicionar Equipamento / Acessório Extra</span>
+                    <span className="text-xs text-gray-500">Selecione um periférico ou cabo livre neste edifício</span>
                   </div>
                 </div>
 
                 {deskBookingData.hasExtra && (
-                  <div className="mt-3 space-y-2 animate-fade-in">
-                    <label className="block text-xs font-bold text-gray-500 uppercase">Selecione o Monitor</label>
-                    {monitorsDisponiveis.length > 0 ? (
+                  <div className="mt-3 space-y-2 animate-fade-in text-left">
+                    <label className="block text-xs font-bold text-gray-500 uppercase">Selecione o Equipamento</label>
+                    {extrasDisponiveis.length > 0 ? (
                       <select
                         value={deskBookingData.extra_resource_id || ''}
                         onChange={(e) => setDeskBookingData(prev => ({ ...prev, extra_resource_id: e.target.value ? parseInt(e.target.value) : null }))}
                         className="w-full border border-gray-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none bg-white font-medium text-gray-800"
                       >
-                        {monitorsDisponiveis.map(m => {
-                          let sizeText = '';
-                          if (m.features) {
-                            const features = typeof m.features === 'string' ? JSON.parse(m.features) : m.features;
-                            if (features.size) sizeText = ` (${features.size})`;
-                          }
+                        {extrasDisponiveis.map(m => {
+                          const tipoMap = {
+                            monitor: 'Monitor',
+                            mouse: 'Rato',
+                            keyboard: 'Teclado',
+                            headphones: 'Fones / Auscultadores',
+                            hdmi_cable: 'Cabo HDMI',
+                            network_cable: 'Cabo de Rede',
+                            webcam: 'Webcam',
+                            hdmi_vga_adapter: 'Adaptador HDMI/VGA',
+                            pc_charger: 'Carregador de PC'
+                          };
+                          const labelTipo = tipoMap[m.type] || m.type;
                           return (
-                            <option key={m.id} value={m.id}>{m.name}{sizeText}</option>
+                            <option key={m.id} value={m.id}>{m.name} ({labelTipo})</option>
                           );
                         })}
                       </select>
                     ) : (
                       <p className="text-xs font-semibold text-admin bg-admin-soft p-3 rounded-lg">
-                        De momento, não existem monitores móveis disponíveis neste edifício para o horário selecionado.
+                        De momento, não existem equipamentos livres neste edifício para o horário selecionado.
                       </p>
                     )}
                   </div>

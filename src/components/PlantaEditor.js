@@ -378,7 +378,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
               </div>
             )}
             <div className="space-y-2">
-              {recursos.filter(r => r.pos_x === null || r.pos_x === undefined).map(recurso => (
+              {recursos.filter(r => (r.pos_x === null || r.pos_x === undefined) && ['desk', 'room', 'monitor'].includes(r.type)).map(recurso => (
                 <div
                   key={recurso.id}
                   draggable
