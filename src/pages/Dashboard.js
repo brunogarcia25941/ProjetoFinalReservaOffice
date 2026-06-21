@@ -378,7 +378,19 @@ function Dashboard() {
   const pisosDisponiveis = [...new Set(recursosDoOffice.map(r => r.floor))].filter(Boolean).sort();
   const tiposDisponiveis = [...new Set(recursosDoOffice.map(r => r.type))].filter(Boolean).sort();
   const traduzirTipo = (tipo) => {
-    const traducoes = { desk: 'Mesas', room: 'Salas de Reunião', monitor: 'Monitores' };
+    const traducoes = { 
+      desk: 'Mesas', 
+      room: 'Salas de Reunião', 
+      monitor: 'Monitores',
+      mouse: 'Ratos',
+      keyboard: 'Teclados',
+      headphones: 'Auscultadores / Fones',
+      hdmi_cable: 'Cabos HDMI',
+      network_cable: 'Cabos de Rede',
+      webcam: 'Webcams',
+      hdmi_vga_adapter: 'Adaptadores HDMI para VGA',
+      pc_charger: 'Carregadores de PC'
+    };
     return traducoes[tipo] || tipo;
   };
 

@@ -27,7 +27,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
     map_image: null,
     map_width: 800,
     map_height: 500,
-    walls: []
+    walls: [],
+    pixels_per_meter: 50
   });
 
   const handleWheel = (e) => {
@@ -116,7 +117,8 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
         map_image: layoutConfig.map_image,
         map_width: layoutConfig.map_width,
         map_height: layoutConfig.map_height,
-        walls: layoutConfig.walls
+        walls: layoutConfig.walls,
+        pixels_per_meter: layoutConfig.pixels_per_meter || 50
       });
       toast.success("Layout do mapa guardado com sucesso!");
     } catch (error) {
@@ -221,7 +223,7 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                 type="number"
                 value={layoutConfig.map_width}
                 onChange={(e) => setLayoutConfig(prev => ({ ...prev, map_width: parseInt(e.target.value) || 800 }))}
-                className="w-24 text-xs border rounded p-2"
+                className="w-24 text-xs border rounded p-2 bg-white outline-none"
               />
             </div>
 
@@ -232,8 +234,28 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                 type="number"
                 value={layoutConfig.map_height}
                 onChange={(e) => setLayoutConfig(prev => ({ ...prev, map_height: parseInt(e.target.value) || 500 }))}
-                className="w-24 text-xs border rounded p-2"
+                className="w-24 text-xs border rounded p-2 bg-white outline-none"
               />
+            </div>
+
+            {/* Escala */}
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1" title="Defina quantos píxeis equivalem a 1 metro">Escala (Píxeis/Metro)</label>
+              <input
+                type="number"
+                value={layoutConfig.pixels_per_meter || 50}
+                onChange={(e) => setLayoutConfig(prev => ({ ...prev, pixels_per_meter: parseInt(e.target.value) || 50 }))}
+                className="w-24 text-xs border rounded p-2 bg-white outline-none"
+                min="10"
+                max="200"
+              />
+            </div>
+
+            <div className="flex flex-col justify-end">
+              <span className="block text-xs font-semibold text-gray-500 mb-1 select-none">Tamanho do Mapa</span>
+              <span className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-200 px-3 rounded-lg h-[34px] flex items-center shadow-inner whitespace-nowrap">
+                {(layoutConfig.map_width / (layoutConfig.pixels_per_meter || 50)).toFixed(1)}m × {(layoutConfig.map_height / (layoutConfig.pixels_per_meter || 50)).toFixed(1)}m
+              </span>
             </div>
 
             {/* Criar/Restaurar Planta Vazia */}
@@ -328,7 +350,22 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
               })()}
               {tooltipData.name}
             </div>
-            <div className="text-xs text-gray-500 capitalize">{tooltipData.type === 'desk' ? 'Mesa' : tooltipData.type} - Piso {tooltipData.floor}</div>
+            <div className="text-xs text-gray-500">{(() => {
+              const mapping = {
+                desk: 'Mesa',
+                room: 'Sala de Reunião',
+                monitor: 'Monitor',
+                mouse: 'Rato',
+                keyboard: 'Teclado',
+                headphones: 'Auscultadores / Fones',
+                hdmi_cable: 'Cabo HDMI',
+                network_cable: 'Cabo de Rede',
+                webcam: 'Webcam',
+                hdmi_vga_adapter: 'Adaptador HDMI para VGA',
+                pc_charger: 'Carregador de PC'
+              };
+              return mapping[tooltipData.type] || tooltipData.type;
+            })()} - Piso {tooltipData.floor}</div>
             
             <div className="mt-2 border-t pt-2">
               {tooltipData.status === 'maintenance' ? (
@@ -393,7 +430,22 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                 >
                   <div>
                     <span className="font-medium text-gray-800 block text-sm">{recurso.name}</span>
-                    <span className="text-xs text-gray-400 capitalize">{recurso.type}</span>
+                    <span className="text-xs text-gray-400">{(() => {
+                      const mapping = {
+                        desk: 'Mesa',
+                        room: 'Sala de Reunião',
+                        monitor: 'Monitor',
+                        mouse: 'Rato',
+                        keyboard: 'Teclado',
+                        headphones: 'Auscultadores / Fones',
+                        hdmi_cable: 'Cabo HDMI',
+                        network_cable: 'Cabo de Rede',
+                        webcam: 'Webcam',
+                        hdmi_vga_adapter: 'Adaptador HDMI para VGA',
+                        pc_charger: 'Carregador de PC'
+                      };
+                      return mapping[recurso.type] || recurso.type;
+                    })()}</span>
                   </div>
                   <div className="bg-primary-soft text-primary p-1 rounded">
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -666,75 +718,99 @@ function PlantaEditor({ recursos, setRecursos, salvarCoordenadasNaBD, pisoAtual,
                       setTooltipData(null);
                     }}
                   >
-                    <Rect
-                      name="recurso-shape"
-                      width={recurso.type === 'room' ? 120 : 60}
-                      height={recurso.type === 'room' ? 80 : 40}
-                      fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
-                      cornerRadius={4}
-                      shadowBlur={5}
-                      shadowOpacity={0.2}
-                      stroke={recurso.status === 'maintenance' ? '#991b1b' : (recurso.is_booked ? '#4b5563' : '#15803d')}
-                      strokeWidth={1}
-                    />
+                    {(() => {
+                      const ppm = layoutConfig.pixels_per_meter || 50;
+                      let featuresObj = {};
+                      if (recurso.features) {
+                        try {
+                          featuresObj = typeof recurso.features === 'string' ? JSON.parse(recurso.features) : recurso.features;
+                        } catch(e) {}
+                      }
 
-                    <Text
-                      name="recurso-text"
-                      text={recurso.name}
-                      fontSize={10}
-                      fill="white"
-                      listening={false}
-                      width={recurso.type === 'room' ? 120 : 60}
-                      height={recurso.type === 'room' ? 80 : 40}
-                      padding={5}
-                      align="center"
-                      verticalAlign="middle"
-                    />
-                    
-                    {modoAdmin && selectedElementId === recurso.id && (
-                      <>
-                        {/* Rodar 90º (Azul) */}
-                        <Group
-                          name="button-control"
-                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 55 : 15}
-                          onClick={() => {
-                            const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
-                            salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
-                          }}
-                        >
-                          <Rect name="button-control" width={18} height={18} fill="#60a5fa" cornerRadius={9} />
-                          <Text name="button-control" text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
-                        </Group>
+                      // Default sizes in meters
+                      const defaultWidths = { desk: 1.2, room: 3.0, monitor: 0.6 };
+                      const defaultHeights = { desk: 0.8, room: 2.0, monitor: 0.4 };
 
-                        {/* Rotação Livre (Roxo) */}
-                        <Group
-                          name="button-control"
-                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 35 : -5}
-                          onClick={() => {
-                            const newAngle = prompt("Introduza o ângulo de rotação em graus (0-360):", recurso.rotation || 0);
-                            if (newAngle !== null) {
-                              salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, parseInt(newAngle) || 0);
-                            }
-                          }}
-                        >
-                          <Rect name="button-control" width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
-                          <Text name="button-control" text="∡" fill="white" fontSize={12} width={18} align="center" y={2} />
-                        </Group>
+                      const wMeters = parseFloat(featuresObj.width_m) || defaultWidths[recurso.type] || 1.0;
+                      const hMeters = parseFloat(featuresObj.height_m) || defaultHeights[recurso.type] || 1.0;
 
-                        {/* Eliminar (Vermelho/Branco) */}
-                        <Group
-                          name="button-control"
-                          x={recurso.type === 'room' ? 95 : 35} y={recurso.type === 'room' ? 15 : -25}
-                          onClick={() => {
-                            setSelectedElementId(null);
-                            salvarCoordenadasNaBD(recurso.id, null, null, 0);
-                          }}
-                        >
-                          <Rect name="button-control" width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
-                          <Text name="button-control" text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                      const wPx = wMeters * ppm;
+                      const hPx = hMeters * ppm;
+
+                      return (
+                        <Group>
+                          <Rect
+                            name="recurso-shape"
+                            width={wPx}
+                            height={hPx}
+                            fill={recurso.status === 'maintenance' ? '#dc2626' : (recurso.is_booked ? '#9ca3af' : '#16a34a')}
+                            cornerRadius={4}
+                            shadowBlur={5}
+                            shadowOpacity={0.2}
+                            stroke={recurso.status === 'maintenance' ? '#991b1b' : (recurso.is_booked ? '#4b5563' : '#15803d')}
+                            strokeWidth={1}
+                          />
+
+                          <Text
+                            name="recurso-text"
+                            text={recurso.name}
+                            fontSize={10}
+                            fill="white"
+                            listening={false}
+                            width={wPx}
+                            height={hPx}
+                            padding={5}
+                            align="center"
+                            verticalAlign="middle"
+                          />
+                          
+                          {modoAdmin && selectedElementId === recurso.id && (
+                            <>
+                              {/* Rodar 90º (Azul) */}
+                              <Group
+                                name="button-control"
+                                x={wPx - 25} y={hPx - 25}
+                                onClick={() => {
+                                  const novaRotacao = ((recurso.rotation || 0) + 90) % 360;
+                                  salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, novaRotacao);
+                                }}
+                              >
+                                <Rect name="button-control" width={18} height={18} fill="#60a5fa" cornerRadius={9} />
+                                <Text name="button-control" text="↻" fill="white" fontSize={14} width={18} align="center" y={0} />
+                              </Group>
+
+                              {/* Rotação Livre (Roxo) */}
+                              <Group
+                                name="button-control"
+                                x={wPx - 25} y={hPx - 45}
+                                onClick={() => {
+                                  const newAngle = prompt("Introduza o ângulo de rotação em graus (0-360):", recurso.rotation || 0);
+                                  if (newAngle !== null) {
+                                    salvarCoordenadasNaBD(recurso.id, recurso.pos_x, recurso.pos_y, parseInt(newAngle) || 0);
+                                  }
+                                }}
+                              >
+                                <Rect name="button-control" width={18} height={18} fill="#8b5cf6" cornerRadius={9} />
+                                <Text name="button-control" text="∡" fill="white" fontSize={12} width={18} align="center" y={2} />
+                              </Group>
+
+                              {/* Eliminar (Vermelho/Branco) */}
+                              <Group
+                                name="button-control"
+                                x={wPx - 25} y={hPx - 65}
+                                onClick={() => {
+                                  setSelectedElementId(null);
+                                  salvarCoordenadasNaBD(recurso.id, null, null, 0);
+                                }}
+                              >
+                                <Rect name="button-control" width={18} height={18} fill="white" stroke="#ef4444" strokeWidth={1} cornerRadius={9} />
+                                <Text name="button-control" text="×" fill="#ef4444" fontSize={16} width={18} align="center" y={-2} fontStyle="bold" />
+                              </Group>
+                            </>
+                          )}
                         </Group>
-                      </>
-                    )}
+                      );
+                    })()}
                   </Group>
                 ))}
               </Layer>
