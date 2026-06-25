@@ -22,9 +22,9 @@
 
 ## Sobre o Projeto
 
-Com o modelo de trabalho híbrido em crescimento, a gestão dos espaços físicos tornou-se um desafio.
+Com o modelo de trabalho híbrido em crescimento, a gestão dos espaços físicos tornou-se um desafio essencial.
 
-O **Reserva Office** é uma plataforma desenhada para garantir que qualquer colaborador consiga visualizar e reservar a sua área de trabalho (secretárias, monitores, salas) de forma antecipada, evitando colisões de horários.
+O **Reserva Office** é uma plataforma desenhada para garantir que qualquer colaborador consiga visualizar e reservar a sua área de trabalho (secretárias, monitores, salas de reunião) de forma antecipada e intuitiva através de um mapa interativo, evitando colisões de horários.
 
 Este repositório contém exclusivamente a **Interface de Utilizador (Frontend)**, desenhada para consumir a API RESTful do Backend.
 
@@ -32,26 +32,29 @@ Este repositório contém exclusivamente a **Interface de Utilizador (Frontend)*
 
 ## Funcionalidades Principais
 
-- **Autenticação Segura**
-  - Login protegido via **JSON Web Tokens (JWT)**.
-  - Persistência de sessão através de `localStorage`.
+- **Autenticação Segura & Sessão**
+  - Login protegido e controlo de sessão via **JSON Web Tokens (JWT)**.
+  - Expiração automática e renovação transparente com Refresh Tokens.
+  - Fluxo de alteração obrigatória de palavra-passe no primeiro login.
 
-- **Painel Interativo (Dashboard)**
-  - Visualização em tempo real do estado de cada recurso.
-  - Recursos podem estar **Disponíveis** ou **Em Manutenção**.
+- **Planta Interativa do Escritório**
+  - Renderização 2D do mapa com zoom dinâmico e arrastamento (drag-and-drop para administradores).
+  - Desenvolvido em canvas com suporte à colocação de mesas, salas e monitores.
+  - Visualização em tempo real do estado de ocupação e manutenção de cada recurso.
 
-- **Gestão Pessoal**
-  - Página **"As Minhas Reservas"**.
-  - Consulta de histórico.
-  - Cancelamento de reservas ativas.
+- **Dashboard & Calendário**
+  - Consulta rápida de recursos disponíveis por data e hora.
+  - Visualização de horários ocupados usando FullCalendar.
 
-- **Design Responsivo**
-  - Interface adaptada a **computadores, tablets e telemóveis**.
-  - Desenvolvido com **Tailwind CSS**.
+- **Área Pessoal ("As Minhas Reservas")**
+  - Listagem de histórico de reservas ativas e passadas.
+  - Cancelamento ágil de reservas programadas.
 
-- **Rotas Privadas**
-  - Apenas utilizadores autenticados podem aceder às páginas internas.
-  - Implementação com **PrivateRoute**.
+- **Gestão de Suporte (Tickets)**
+  - Criação de pedidos de suporte ou manutenção para secretárias/salas danificadas.
+
+- **Design Responsivo & Moderno**
+  - Desenvolvido com Tailwind CSS, perfeitamente adaptado a computadores, tablets e smartphones.
 
 ---
 
@@ -60,68 +63,61 @@ Este repositório contém exclusivamente a **Interface de Utilizador (Frontend)*
 O projeto foi desenvolvido focando na **performance, simplicidade e escalabilidade**.
 
 ### Frontend
-- **Framework:** React.js (v18)
-- **Routing:** React Router DOM (v6)
+- **Framework:** React.js (v19)
+- **Routing:** React Router (v7)
+- **Renderização Gráfica:** Konva / React-Konva (HTML5 Canvas 2D)
+- **Calendário:** FullCalendar
+- **Gestão de Cache HTTP:** `@tanstack/react-query`
 - **Estilização:** Tailwind CSS
-- **HTTP Client:** Axios
+- **HTTP Client:** Axios (configurado com intercetores para gerir tokens JWT)
 - **Gestão de Estado:** React Context API
 
 ---
 
 ## Estrutura do Projeto
 
-A arquitetura foi organizada para permitir fácil manutenção e escalabilidade.
+A arquitetura foi organizada para permitir fácil manutenção e reutilização de componentes.
 
 ```text
 src/
+├── api/              # Configurações de clientes HTTP (axiosConfig.js)
+├── components/       # Componentes reutilizáveis (PlantaEditor, UI, Formulários)
 ├── context/          # Estados globais (Ex: AuthContext.js para sessão)
-├── pages/            # Ecrãs principais da aplicação
-│   ├── Login.js      # Autenticação
-│   ├── Dashboard.js  # Grelha de mesas e salas
-│   └── MyBookings.js # Histórico pessoal do utilizador
-├── App.js            # Configuração de Rotas e Proteção (Private Routes)
-└── index.css         # Configurações globais do Tailwind
+├── pages/            # Ecrãs principais da aplicação (Dashboard, Admin, Tickets, etc.)
+├── App.js            # Configuração de Rotas e RotaPrivada/RotaAdmin
+└── index.css         # Estilos globais e diretivas do Tailwind
 ```
+
+---
 
 ## Configuração do Ambiente Local
 
-Se quiseres executar o projeto localmente, segue os passos abaixo.
-
 ### 1. Pré-requisitos
 Certifica-te de que tens instalado:
-- **Node.js** (versão 16 ou superior)
-- **NPM** ou **Yarn**
+- **Node.js** (versão 18 ou superior)
+- **NPM**
 
 ### 2. Clonar o Repositório
 ```bash
-git clone [https://github.com/brunogarcia25941/ProjetoFinalReservaOffice.git](https://github.com/brunogarcia25941/ProjetoFinalReservaOffice.git)
+git clone https://github.com/brunogarcia25941/ProjetoFinalReservaOffice.git
 cd ProjetoFinalReservaOffice
-
 ```
 
 ### 3. Instalar Dependências
-
 ```bash
 npm install
-
 ```
 
-### 4. Ligação à API (Backend)
-
-Por defeito, a aplicação fará os pedidos para:
-
+### 4. Configurar Ligação à API (Backend)
+No diretório `src/`, ajusta o endereço do backend em `config.js` ou nas variáveis de ambiente:
 ```text
 http://localhost:5000/api
-
 ```
 
 ### 5. Iniciar o Servidor de Desenvolvimento
-
 ```bash
 npm start
-
 ```
-
 A aplicação ficará disponível em `http://localhost:3000`.
 
 ---
@@ -131,7 +127,6 @@ A aplicação ficará disponível em `http://localhost:3000`.
 A lógica de autenticação está centralizada em `src/context/AuthContext.js`.
 
 **Exemplo de utilização:**
-
 ```javascript
 import { useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
@@ -141,38 +136,16 @@ function MeuComponente() {
 
   return <div>Bem-vindo {user.name}</div>;
 }
-
 ```
 
 ---
 
 ## Convenções de Código
 
-Para manter consistência no projeto, devem ser seguidas as seguintes regras:
-
-### Componentes
-
-* Utilizar apenas **componentes funcionais**.
-* Utilizar **React Hooks** (`useState`, `useEffect`, etc.).
-
-### Estilização
-
-* Usar exclusivamente **Tailwind CSS**.
-
-### Chamadas à API
-
-* Utilizar **Axios**.
-* Implementar blocos `try/catch` para tratamento de erros.
-
-**Exemplo:**
-
-```javascript
-try {
-  const response = await axios.get("/api/bookings");
-} catch (error) {
-  console.error("Erro ao carregar reservas", error);
-}
-
-```
+Para manter a consistência e qualidade do projeto, são seguidas as seguintes regras:
+* Utilizar apenas **componentes funcionais** com Hooks.
+* Gestão assíncrona de dados com `@tanstack/react-query` nas listagens para evitar pedidos redundantes à API.
+* Estilização exclusiva com **Tailwind CSS**.
+* Tratamento centralizado de notificações com `react-toastify`.
 
 **Desenvolvido por:** Bruno Garcia e Bernardo Alves - Projeto Final MVP
