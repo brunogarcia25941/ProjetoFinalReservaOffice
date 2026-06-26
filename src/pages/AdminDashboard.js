@@ -16,6 +16,7 @@ import ResourceForm from '../components/forms/ResourceForm';
 import OfficeForm from '../components/forms/OfficeForm';
 import StatsView from '../components/ui/StatsView';
 import RegistrationRequestsTable from '../components/ui/RegistrationRequestsTable';
+import Footer from '../components/layout/Footer';
 
 function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('reservas');
@@ -251,10 +252,10 @@ function AdminDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans relative">
+    <div className="min-h-screen bg-gray-50 font-sans relative flex flex-col">
       <Navbar user={user} logout={handleLogout} isAdmin={true} />
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
+      <main className="max-w-7xl mx-auto px-4 py-8 flex-1 w-full">
         {/* Menu de Abas */}
         <div className="mb-4 border-b border-gray-200 pb-4">
           <div className="flex flex-wrap lg:flex-nowrap gap-2 overflow-x-auto lg:overflow-x-visible pb-2 lg:pb-0 w-full lg:w-auto scrollbar-none">
@@ -369,6 +370,7 @@ function AdminDashboard() {
       <Modal isOpen={isEditOfficeModalOpen} onClose={() => setIsEditOfficeModalOpen(false)} title={`Editar ${editingOffice.name}`}>
         <OfficeForm office={editingOffice} onChange={setEditingOffice} onSubmit={handleActualizarEscritorio} isEdit />
       </Modal>
+      <Footer /> {/* Rodapé no final da página */}
     </div>
   );
 }

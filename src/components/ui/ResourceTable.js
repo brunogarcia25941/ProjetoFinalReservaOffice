@@ -268,7 +268,7 @@ function ResourceTable({ resources, onEdit, onDelete }) {
                     <td className="px-6 py-4">Piso {r.floor}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2 py-1 text-xs font-bold rounded-full ${
+                        className={`px-2 py-1 text-xs font-bold rounded-full whitespace-nowrap ${
                           r.status === 'active' ? 'bg-success-light text-success' : 'bg-admin-light text-admin'
                         }`}
                       >

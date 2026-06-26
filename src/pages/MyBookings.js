@@ -12,6 +12,7 @@ import listPlugin from '@fullcalendar/list';
 import Navbar from '../components/layout/Navbar';
 import Modal from '../components/ui/Modal';
 import BookingForm from '../components/forms/BookingForm';
+import Footer from '../components/layout/Footer';
 
 const gerarLinkGoogleCalendar = (reserva) => {
   if (!reserva) return '';
@@ -311,7 +312,7 @@ function MyBookings() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <style>{`
         @media (max-width: 640px) {
           .fc .fc-toolbar {
@@ -342,7 +343,7 @@ function MyBookings() {
       
       <Navbar user={user} logout={handleLogout} />
 
-      <main className="max-w-5xl mx-auto px-4 py-8">
+      <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <h2 className="text-2xl font-bold text-gray-800">As Minhas Reservas</h2>
           <div className="flex items-center gap-2 bg-primary-soft text-primary-hover px-4 py-2 rounded-lg text-sm border border-primary-light shadow-sm animate-fade-in">
@@ -493,6 +494,7 @@ function MyBookings() {
       <Modal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} title="Editar Reserva" maxWidth="max-w-md">
         {reservaEditando && <BookingForm booking={reservaEditando} resources={recursos} onSubmit={atualizarReserva} onChange={setReservaEditando} onCancel={() => setIsEditModalOpen(false)} />}
       </Modal>
+      <Footer /> {/* Rodapé no final da página */}
     </div>
   );
 }

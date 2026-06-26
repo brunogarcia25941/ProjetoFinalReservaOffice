@@ -5,6 +5,7 @@ import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-toastify';
 import Navbar from '../components/layout/Navbar';
 import Modal from '../components/ui/Modal';
+import Footer from '../components/layout/Footer';
 
 function TicketsDashboard() {
   const [tickets, setTickets] = useState([]);
@@ -162,10 +163,10 @@ function TicketsDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <Navbar user={user} logout={handleLogout} />
 
-      <main className="max-w-6xl mx-auto px-4 py-8">
+      <main className="max-w-6xl mx-auto px-4 py-8 flex-1 w-full">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
@@ -441,6 +442,7 @@ function TicketsDashboard() {
           </div>
         </form>
       </Modal>
+      <Footer /> {/* Rodapé no final da página */}
     </div>
   );
 }

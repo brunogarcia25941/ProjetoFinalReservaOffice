@@ -8,6 +8,7 @@ import Navbar from '../components/layout/Navbar';
 import SidebarFilters from '../components/layout/SidebarFilters';
 import Modal from '../components/ui/Modal';
 import GuestInput from '../components/forms/GuestInput';
+import Footer from '../components/layout/Footer'; 
 
 const formatarDataGoogle = (dataStr) => {
   if (!dataStr) return '';
@@ -421,9 +422,9 @@ function Dashboard() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <Navbar user={user} logout={handleLogout} />
-      <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8">
+      <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 flex-1 w-full">
         <SidebarFilters 
           dataInicio={dataInicio} setDataInicio={setDataInicio} 
           dataFim={dataFim} setDataFim={setDataFim}
@@ -855,6 +856,7 @@ function Dashboard() {
           );
         })()}
       </Modal>
+      <Footer /> {/* Rodapé no final da página */}
     </div>
   );
 }
