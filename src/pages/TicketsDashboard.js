@@ -14,7 +14,7 @@ function TicketsDashboard() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isResolveModalOpen, setIsResolveModalOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   // States para novos tickets
   const [newTicket, setNewTicket] = useState({
     resource_id: '',
@@ -173,8 +173,8 @@ function TicketsDashboard() {
               {isTechOrAdmin ? "Gestão de Avarias e Suporte" : "Suporte & Ocorrências"}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {isTechOrAdmin 
-                ? "Painel técnico para visualização, atribuição e resolução de avarias reportadas." 
+              {isTechOrAdmin
+                ? "Painel técnico para visualização, atribuição e resolução de avarias reportadas."
                 : "Reporte avarias nos recursos do escritório e acompanhe o estado de resolução."}
             </p>
           </div>
@@ -225,7 +225,14 @@ function TicketsDashboard() {
 
         {/* Lista de Tickets */}
         {isLoading ? (
-          <div className="text-center py-12 text-gray-500 font-medium animate-pulse">A carregar ocorrências...</div>
+          /* Símbolo de carregamento visual para a lista de tickets de avarias */
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500 font-semibold bg-white border border-gray-200 rounded-xl shadow-sm animate-fade-in">
+            <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>A carregar ocorrências reportadas...</span>
+          </div>
         ) : ticketsFiltrados.length === 0 ? (
           <div className="bg-white border border-gray-200 rounded-xl p-12 text-center shadow-sm">
             <svg className="w-12 h-12 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
@@ -235,8 +242,8 @@ function TicketsDashboard() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {ticketsFiltrados.map((ticket) => (
-              <div 
-                key={ticket.id} 
+              <div
+                key={ticket.id}
                 className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
               >
                 <div>
@@ -250,7 +257,7 @@ function TicketsDashboard() {
 
                   <h3 className="text-base font-bold text-gray-800 mb-1">{ticket.title}</h3>
                   <p className="text-xs text-gray-600 line-clamp-3 mb-4 leading-relaxed">{ticket.description}</p>
-                  
+
                   <div className="bg-gray-50 border border-gray-100 rounded-lg p-3 space-y-1.5 text-xs text-gray-500 mb-4">
                     {ticket.resource_name && (
                       <div className="flex justify-between">

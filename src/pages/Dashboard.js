@@ -8,7 +8,7 @@ import Navbar from '../components/layout/Navbar';
 import SidebarFilters from '../components/layout/SidebarFilters';
 import Modal from '../components/ui/Modal';
 import GuestInput from '../components/forms/GuestInput';
-import Footer from '../components/layout/Footer'; 
+import Footer from '../components/layout/Footer';
 
 const formatarDataGoogle = (dataStr) => {
   if (!dataStr) return '';
@@ -140,11 +140,11 @@ function Dashboard() {
   const confirmarReservaSala = async (e) => {
     e.preventDefault();
     if (!roomBookingData) return;
-    
+
     try {
-      const payload = { 
-        resource_id: roomBookingData.id, 
-        start_time: roomBookingData.start_time, 
+      const payload = {
+        resource_id: roomBookingData.id,
+        start_time: roomBookingData.start_time,
         end_time: roomBookingData.end_time,
         guests: roomBookingData.guests
       };
@@ -161,9 +161,9 @@ function Dashboard() {
       toast.success(({ closeToast }) => (
         <div className="flex flex-col text-left">
           <span>Reserva para <b>{roomBookingData.name}</b> efetuada com sucesso!</span>
-          <a 
-            href={gLink} 
-            target="_blank" 
+          <a
+            href={gLink}
+            target="_blank"
             rel="noopener noreferrer"
             onClick={closeToast}
             className="mt-2 text-xs text-white bg-indigo-600 hover:bg-indigo-700 font-bold py-1.5 px-3 rounded-lg text-center inline-block transition-colors"
@@ -210,9 +210,9 @@ function Dashboard() {
       toast.success(({ closeToast }) => (
         <div className="flex flex-col text-left">
           <span>Reserva para <b>{deskName}</b> efetuada com sucesso!</span>
-          <a 
-            href={gLink} 
-            target="_blank" 
+          <a
+            href={gLink}
+            target="_blank"
             rel="noopener noreferrer"
             onClick={closeToast}
             className="mt-2 text-xs text-white bg-indigo-600 hover:bg-indigo-700 font-bold py-1.5 px-3 rounded-lg text-center inline-block transition-colors"
@@ -350,7 +350,7 @@ function Dashboard() {
 
     // Sugerir o primeiro disponível
     const sugerido = disponiveisAcessiveis[0];
-    
+
     toast(({ closeToast }) => (
       <div className="flex flex-col">
         <h4 className="font-bold text-gray-800 mb-1 text-base flex items-center gap-1.5">
@@ -360,11 +360,11 @@ function Dashboard() {
           Sugerimos a <b>{sugerido.name}</b> (Piso {sugerido.floor}) que está livre e adaptada a PMR.
         </p>
         <div className="flex gap-2">
-          <button 
-            onClick={() => { 
-              closeToast(); 
-              reservarRecurso(sugerido.id, sugerido.name); 
-            }} 
+          <button
+            onClick={() => {
+              closeToast();
+              reservarRecurso(sugerido.id, sugerido.name);
+            }}
             className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors"
           >
             Reservar
@@ -379,9 +379,9 @@ function Dashboard() {
   const pisosDisponiveis = [...new Set(recursosDoOffice.map(r => r.floor))].filter(Boolean).sort();
   const tiposDisponiveis = [...new Set(recursosDoOffice.map(r => r.type))].filter(Boolean).sort();
   const traduzirTipo = (tipo) => {
-    const traducoes = { 
-      desk: 'Mesas', 
-      room: 'Salas de Reunião', 
+    const traducoes = {
+      desk: 'Mesas',
+      room: 'Salas de Reunião',
       monitor: 'Monitores',
       mouse: 'Ratos',
       keyboard: 'Teclados',
@@ -405,7 +405,7 @@ function Dashboard() {
     else if (statusFiltro === 'ocupado') passaStatus = isAlreadyBooked && !isMaintenance;
     else if (statusFiltro === 'manutencao') passaStatus = isMaintenance;
     const passaTipo = !tiposDesmarcados.includes(r.type);
-    
+
     // Filtro de Acessibilidade
     let passaAcessibilidade = true;
     if (apenasAcessiveis) {
@@ -413,7 +413,7 @@ function Dashboard() {
       if (r.features) {
         try {
           featuresObj = typeof r.features === 'string' ? JSON.parse(r.features) : r.features;
-        } catch(e) {}
+        } catch (e) { }
       }
       passaAcessibilidade = !!featuresObj.accessible;
     }
@@ -425,8 +425,8 @@ function Dashboard() {
     <div className="min-h-screen bg-gray-50 font-sans flex flex-col">
       <Navbar user={user} logout={handleLogout} />
       <div className="max-w-7xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-8 flex-1 w-full">
-        <SidebarFilters 
-          dataInicio={dataInicio} setDataInicio={setDataInicio} 
+        <SidebarFilters
+          dataInicio={dataInicio} setDataInicio={setDataInicio}
           dataFim={dataFim} setDataFim={setDataFim}
           atalhoAtivo={atalhoAtivo} setAtalhoAtivo={setAtalhoAtivo}
           numHoras={numHoras} setNumHoras={setNumHoras}
@@ -485,7 +485,7 @@ function Dashboard() {
 
             const maxEndDate = new Date(start);
             maxEndDate.setMonth(maxEndDate.getMonth() + 1);
-            
+
             const agora = new Date();
             const limiteFuturo = new Date(agora);
             limiteFuturo.setMonth(limiteFuturo.getMonth() + 1);
@@ -518,7 +518,16 @@ function Dashboard() {
             </div>
           )}
 
-          {isLoading && !isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && <div className="text-center py-12 text-gray-500 font-medium animate-pulse">A verificar disponibilidade...</div>}
+
+          {isLoading && !isForaDeHoras && new Date(dataInicio) < new Date(dataFim) && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3 text-gray-500 font-semibold animate-fade-in">
+              <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>A verificar disponibilidade de recursos...</span>
+            </div>
+          )}
 
           {vista === 'mapa' ? (
             <div className="animate-fade-in space-y-4">
@@ -569,7 +578,7 @@ function Dashboard() {
                               if (recurso.features) {
                                 try {
                                   featuresObj = typeof recurso.features === 'string' ? JSON.parse(recurso.features) : recurso.features;
-                                } catch(e) {}
+                                } catch (e) { }
                               }
                               return !!featuresObj.accessible && <span title="Lugar Acessível (PMR)" className="text-blue-500 font-semibold">♿</span>;
                             })()}
@@ -588,9 +597,9 @@ function Dashboard() {
         </main>
       </div>
 
-      <Modal 
-        isOpen={isRoomBookingModalOpen} 
-        onClose={() => { setIsRoomBookingModalOpen(false); setRoomBookingData(null); }} 
+      <Modal
+        isOpen={isRoomBookingModalOpen}
+        onClose={() => { setIsRoomBookingModalOpen(false); setRoomBookingData(null); }}
         title="Confirmar Reserva de Sala"
       >
         {roomBookingData && (
@@ -615,17 +624,17 @@ function Dashboard() {
             </div>
 
             <div className="pt-2">
-              <GuestInput 
+              <GuestInput
                 guests={roomBookingData.guests}
                 onChange={(newGuests) => setRoomBookingData(prev => ({ ...prev, guests: newGuests }))}
               />
             </div>
 
             <div className="pt-2 border-t border-gray-100 space-y-3">
-              <div 
+              <div
                 className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-                onClick={() => setRoomBookingData(prev => ({ 
-                  ...prev, 
+                onClick={() => setRoomBookingData(prev => ({
+                  ...prev,
                   isRecurring: !prev.isRecurring,
                   recurrenceType: prev.isRecurring ? '' : 'weekly',
                   recurrenceEndDate: prev.isRecurring ? '' : prev.end_time.substring(0, 10)
@@ -634,7 +643,7 @@ function Dashboard() {
                 <input
                   type="checkbox"
                   checked={!!roomBookingData.isRecurring}
-                  onChange={() => {}} // handled by click
+                  onChange={() => { }} // handled by click
                   className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
                 />
                 <div className="flex flex-col text-left">
@@ -673,14 +682,14 @@ function Dashboard() {
             </div>
 
             <div className="pt-4 flex gap-3">
-              <button 
+              <button
                 type="button"
                 onClick={() => { setIsRoomBookingModalOpen(false); setRoomBookingData(null); }}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm"
               >
                 Cancelar
               </button>
-              <button 
+              <button
                 type="submit"
                 className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-primary-light text-sm"
               >
@@ -691,20 +700,20 @@ function Dashboard() {
         )}
       </Modal>
 
-      <Modal 
-        isOpen={isDeskBookingModalOpen} 
-        onClose={() => { setIsDeskBookingModalOpen(false); setDeskBookingData(null); }} 
+      <Modal
+        isOpen={isDeskBookingModalOpen}
+        onClose={() => { setIsDeskBookingModalOpen(false); setDeskBookingData(null); }}
         title="Confirmar Reserva de Mesa"
       >
         {deskBookingData && (() => {
           const deskObj = recursos.find(r => r.id === deskBookingData.id);
-          const extrasDisponiveis = deskObj ? recursos.filter(r => 
-            ['monitor', 'mouse', 'keyboard', 'headphones', 'hdmi_cable', 'network_cable', 'webcam', 'hdmi_vga_adapter', 'pc_charger'].includes(r.type) && 
+          const extrasDisponiveis = deskObj ? recursos.filter(r =>
+            ['monitor', 'mouse', 'keyboard', 'headphones', 'hdmi_cable', 'network_cable', 'webcam', 'hdmi_vga_adapter', 'pc_charger'].includes(r.type) &&
             r.status === 'active' &&
             r.is_booked !== 1 &&
             r.building === deskObj.building
           ) : [];
-          
+
           return (
             <form onSubmit={confirmarReservaMesa} className="space-y-4">
               <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 space-y-2.5">
@@ -727,21 +736,21 @@ function Dashboard() {
               </div>
 
               <div className="pt-2 border-t border-gray-100">
-                <div 
+                <div
                   className="flex items-center space-x-3 p-3 bg-primary-soft border border-primary-light rounded-xl cursor-pointer hover:bg-primary-soft/80 transition-colors"
                   onClick={() => setDeskBookingData(prev => {
                     const nextHasExtra = !prev.hasExtra;
-                    return { 
-                      ...prev, 
-                      hasExtra: nextHasExtra, 
-                      extra_resource_id: nextHasExtra ? (extrasDisponiveis[0]?.id || null) : null 
+                    return {
+                      ...prev,
+                      hasExtra: nextHasExtra,
+                      extra_resource_id: nextHasExtra ? (extrasDisponiveis[0]?.id || null) : null
                     };
                   })}
                 >
                   <input
                     type="checkbox"
                     checked={deskBookingData.hasExtra}
-                    onChange={() => {}} // handled by click on parent div
+                    onChange={() => { }} // handled by click on parent div
                     className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="flex flex-col text-left">
@@ -787,10 +796,10 @@ function Dashboard() {
               </div>
 
               <div className="pt-2 border-t border-gray-100 space-y-3">
-                <div 
+                <div
                   className="flex items-center space-x-3 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => setDeskBookingData(prev => ({ 
-                    ...prev, 
+                  onClick={() => setDeskBookingData(prev => ({
+                    ...prev,
                     isRecurring: !prev.isRecurring,
                     recurrenceType: prev.isRecurring ? '' : 'weekly',
                     recurrenceEndDate: prev.isRecurring ? '' : prev.end_time.substring(0, 10)
@@ -799,7 +808,7 @@ function Dashboard() {
                   <input
                     type="checkbox"
                     checked={!!deskBookingData.isRecurring}
-                    onChange={() => {}} // handled by click
+                    onChange={() => { }} // handled by click
                     className="h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary focus:ring-offset-0 cursor-pointer"
                   />
                   <div className="flex flex-col text-left">
@@ -838,14 +847,14 @@ function Dashboard() {
               </div>
 
               <div className="pt-4 flex gap-3">
-                <button 
+                <button
                   type="button"
                   onClick={() => { setIsDeskBookingModalOpen(false); setDeskBookingData(null); }}
                   className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors text-sm"
                 >
                   Cancelar
                 </button>
-                <button 
+                <button
                   type="submit"
                   className="flex-1 bg-primary hover:bg-primary-hover text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-primary-light text-sm"
                 >

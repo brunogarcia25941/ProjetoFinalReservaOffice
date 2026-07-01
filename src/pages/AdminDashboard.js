@@ -29,7 +29,7 @@ function AdminDashboard() {
   const [editingUser, setEditingUser] = useState({ id: '', name: '', email: '', role: '', home_office_id: null });
   const [novoRecurso, setNovoRecurso] = useState({ name: '', type: 'desk', floor: 1, status: 'active', building: 'Edifício Principal', features: {} });
   const [editingRecurso, setEditingRecurso] = useState({ id: '', name: '', type: '', floor: '', status: '', building: '', features: {} });
-  
+
   const [isOfficeModalOpen, setIsOfficeModalOpen] = useState(false);
   const [isEditOfficeModalOpen, setIsEditOfficeModalOpen] = useState(false);
   const [novoOffice, setNovoOffice] = useState({ name: '', address: '', operating_hours_start: '09:00:00', operating_hours_end: '18:00:00', timezone: 'Europe/Lisbon' });
@@ -41,38 +41,46 @@ function AdminDashboard() {
   const queryClient = useQueryClient();
 
   // Queries
-  const { data: utilizadores = [], isError: isErrorUsers } = useQuery({
+  const { data: utilizadores = [], isError: isErrorUsers, isLoading: isLoadingUsers } = useQuery({
     queryKey: ['utilizadores'],
     queryFn: () => api.get(`/admin/users`).then(res => res.data),
     enabled: !!token,
     refetchInterval: 10000
   });
 
-  const { data: todasReservas = [] } = useQuery({
+  const { data: todasReservas = [], isLoading: isLoadingReservas } = useQuery({
     queryKey: ['reservas'],
     queryFn: () => api.get(`/bookings/all`).then(res => res.data),
     enabled: !!token,
     refetchInterval: 10000
   });
 
-  const { data: recursos = [] } = useQuery({
+  const { data: recursos = [], isLoading: isLoadingRecursos } = useQuery({
     queryKey: ['recursos'],
     queryFn: () => api.get(`/resources`).then(res => res.data),
     enabled: !!token,
     refetchInterval: 10000
   });
 
-  const { data: officesList = [] } = useQuery({
+  const { data: officesList = [], isLoading: isLoadingOffices } = useQuery({
     queryKey: ['escritorios'],
     queryFn: () => api.get(`/offices`).then(res => res.data),
     enabled: !!token,
     refetchInterval: 10000
   });
 
-  const { data: picklists = { roles: [], resourceTypes: [], resourceStatuses: [] } } = useQuery({
+  const { data: picklists = { roles: [], resourceTypes: [], resourceStatuses: [] }, isLoading: isLoadingPicklists } = useQuery({
     queryKey: ['picklists'],
     queryFn: () => api.get(`/picklists`).then(res => res.data)
   });
+
+  // Verifica se a aba ativa está a carregar dados pela primeira vez
+  const isLoadingTab =
+    (activeTab === 'reservas' && isLoadingReservas) ||
+    (activeTab === 'utilizadores' && (isLoadingUsers || isLoadingPicklists)) ||
+    (activeTab === 'recursos' && (isLoadingRecursos || isLoadingPicklists)) ||
+    (activeTab === 'escritorios' && isLoadingOffices) ||
+    (activeTab === 'mapa' && isLoadingRecursos);
 
   const handleLogout = () => {
     logout();
@@ -299,6 +307,15 @@ function AdminDashboard() {
           <div className="bg-admin-soft text-admin border-admin-light p-6 rounded-xl text-center shadow-sm">
             <h3 className="text-lg font-bold">Erro ao carregar dados. Verifique a sua ligação.</h3>
           </div>
+        ) : isLoadingTab ? (
+          /* Símbolo de carregamento visual para a aba selecionada no painel administrativo */
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500 font-semibold bg-white border border-gray-200 rounded-xl shadow-sm">
+            <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>A carregar informações da secção...</span>
+          </div>
         ) : (
           <>
             {activeTab === 'reservas' && <BookingTable bookings={todasReservas} />}
@@ -306,21 +323,21 @@ function AdminDashboard() {
             {activeTab === 'utilizadores' && <UserTable users={utilizadores} picklists={picklists} onEdit={(u) => { setEditingUser(u); setIsEditModalOpen(true); }} onDelete={handleEliminarUtilizador} />}
             {activeTab === 'pedidos' && <RegistrationRequestsTable />}
             {activeTab === 'recursos' && (
-              <ResourceTable 
-                resources={recursos.filter(r => !selectedOffice || r.building === selectedOffice)} 
-                onEdit={(r) => { 
+              <ResourceTable
+                resources={recursos.filter(r => !selectedOffice || r.building === selectedOffice)}
+                onEdit={(r) => {
                   let parsedFeatures = {};
                   if (r.features) {
                     try {
                       parsedFeatures = typeof r.features === 'string' ? JSON.parse(r.features) : r.features;
-                    } catch(e) {
+                    } catch (e) {
                       console.error("Erro ao fazer parse das características:", e);
                     }
                   }
-                  setEditingRecurso({ ...r, features: parsedFeatures }); 
-                  setIsEditRecursoModalOpen(true); 
-                }} 
-                onDelete={handleEliminarRecurso} 
+                  setEditingRecurso({ ...r, features: parsedFeatures });
+                  setIsEditRecursoModalOpen(true);
+                }}
+                onDelete={handleEliminarRecurso}
               />
             )}
             {activeTab === 'escritorios' && <OfficeTable offices={officesList} onEdit={(o) => { setEditingOffice(o); setIsEditOfficeModalOpen(true); }} onDelete={handleDesativarEscritorio} />}

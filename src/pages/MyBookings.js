@@ -16,28 +16,28 @@ import Footer from '../components/layout/Footer';
 
 const gerarLinkGoogleCalendar = (reserva) => {
   if (!reserva) return '';
-  
+
   const formatarDataGoogle = (dataStr) => {
     const d = new Date(dataStr.replace(' ', 'T'));
-    
+
     const ano = d.getUTCFullYear();
     const mes = String(d.getUTCMonth() + 1).padStart(2, '0');
     const dia = String(d.getUTCDate()).padStart(2, '0');
     const horas = String(d.getUTCHours()).padStart(2, '0');
     const minutos = String(d.getUTCMinutes()).padStart(2, '0');
     const segundos = String(d.getUTCSeconds()).padStart(2, '0');
-    
+
     return `${ano}${mes}${dia}T${horas}${minutos}${segundos}Z`;
   };
 
   const startG = formatarDataGoogle(reserva.start_time);
   const endG = formatarDataGoogle(reserva.end_time);
-  
+
   const titulo = encodeURIComponent(`Reserva: ${reserva.resource_name}`);
   const datas = `${startG}/${endG}`;
   const localizacao = encodeURIComponent(`${reserva.resource_name} - Escritório`);
   const detalhes = encodeURIComponent(`Reserva realizada através do portal Reserva Office.\nRecurso: ${reserva.resource_name} (${reserva.resource_type})`);
-  
+
   return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${titulo}&dates=${datas}&details=${detalhes}&location=${localizacao}`;
 };
 
@@ -49,6 +49,7 @@ function MyBookings() {
   const [reservaEditando, setReservaEditando] = useState(null);
   const [vistaAtiva, setVistaAtiva] = useState(window.innerWidth < 768 ? 'lista' : 'calendario');
   const calendarRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
   // Efeito para ajustar a vista do FullCalendar com base no tamanho do ecrã
   useEffect(() => {
@@ -67,8 +68,8 @@ function MyBookings() {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [vistaAtiva]);
-  
-  const { logout, token, user } = useContext(AuthContext); 
+
+  const { logout, token, user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -77,21 +78,30 @@ function MyBookings() {
   };
 
   useEffect(() => {
-    const buscarDados = () => {
-      api.get(`/bookings`)
-        .then((response) => setReservas(response.data))
-        .catch((error) => {
-          console.error("Erro na API:", error);
-          setErro("Não foi possível carregar as tuas reservas.");
-        });
-
-      api.get(`/resources`)
-        .then((response) => setRecursos(response.data))
-        .catch((error) => console.error("Erro ao carregar recursos:", error));
+    // Função para buscar dados da API com controlo do estado de loading apenas na primeira carga
+    const buscarDados = async (primeiraCarga = false) => {
+      if (primeiraCarga) {
+        setLoading(true);
+      }
+      try {
+        const [bookingsRes, resourcesRes] = await Promise.all([
+          api.get('/bookings'),
+          api.get('/resources')
+        ]);
+        setReservas(bookingsRes.data);
+        setRecursos(resourcesRes.data);
+      } catch (error) {
+        console.error("Erro ao carregar reservas:", error);
+        setErro("Não foi possível carregar as tuas reservas.");
+      } finally {
+        if (primeiraCarga) {
+          setLoading(false);
+        }
+      }
     };
 
-    buscarDados();
-    const interval = setInterval(buscarDados, 10000);
+    buscarDados(true);
+    const interval = setInterval(() => buscarDados(false), 10000);
     return () => clearInterval(interval);
   }, [token]);
 
@@ -112,12 +122,12 @@ function MyBookings() {
         toast.error('Erro ao cancelar a reserva.');
       }
     };
-    
+
     toast(({ closeToast }) => (
       <div className="flex flex-col text-left">
         <h4 className="font-bold text-gray-800 mb-1 text-base">Cancelar Reserva</h4>
         <p className="text-sm text-gray-600 mb-4">Queres cancelar a reserva para a <b>{nomeRecurso || 'mesa'}</b>?</p>
-        
+
         {isRecurring ? (
           <div className="flex flex-col gap-2">
             <button onClick={() => { efetuarCancelamento('single'); closeToast(); }} className="w-full bg-admin hover:bg-admin-hover text-white font-bold py-2 rounded-lg text-sm transition-colors">
@@ -152,7 +162,7 @@ function MyBookings() {
         toast.error(error.response?.data?.message || 'Erro ao terminar a reserva.');
       }
     };
-    
+
     toast(({ closeToast }) => (
       <div className="flex flex-col">
         <h4 className="font-bold text-gray-800 mb-1 text-base">Terminar Reserva</h4>
@@ -210,9 +220,9 @@ function MyBookings() {
       const startFormatado = reservaEditando.start_time.replace('T', ' ') + ':00';
       const endFormatado = reservaEditando.end_time.replace('T', ' ') + ':00';
       const guestEmails = (reservaEditando.guests || []).map(g => typeof g === 'string' ? g : g.email);
-      await api.put(`/bookings/${reservaEditando.booking_id}`, { 
-        resource_id: reservaEditando.resource_id, 
-        start_time: startFormatado, 
+      await api.put(`/bookings/${reservaEditando.booking_id}`, {
+        resource_id: reservaEditando.resource_id,
+        start_time: startFormatado,
         end_time: endFormatado,
         guests: guestEmails,
         extra_resource_id: reservaEditando.extra_resource_id
@@ -230,8 +240,8 @@ function MyBookings() {
     .filter(r => r.status === 'confirmed' || r.status === 'completed')
     .map(r => ({
       id: r.booking_id,
-      title: r.resource_name + (r.extra ? ` (+ ${r.extra.resource_name})` : '') + (r.status === 'completed' ? ' (Concluída)' : ''), 
-      start: r.start_time.replace(' ', 'T'), 
+      title: r.resource_name + (r.extra ? ` (+ ${r.extra.resource_name})` : '') + (r.status === 'completed' ? ' (Concluída)' : ''),
+      start: r.start_time.replace(' ', 'T'),
       end: r.end_time.replace(' ', 'T'),
       backgroundColor: r.status === 'completed' ? '#9ca3af' : '#2563eb', // cinza para concluída
       borderColor: r.status === 'completed' ? '#6b7280' : '#1d4ed8',
@@ -242,11 +252,11 @@ function MyBookings() {
   const handleEventClick = (clickInfo) => {
     const idReserva = clickInfo.event.id;
     const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
-    
+
     // Encontrar monitor extra
     const bookingObj = reservas.find(r => Number(r.booking_id) === Number(idReserva));
     const extraText = bookingObj && bookingObj.extra ? ` + ${bookingObj.extra.resource_name}` : '';
-    
+
     // Se a reserva já foi concluída
     if (bookingObj && bookingObj.status === 'completed') {
       toast(({ closeToast }) => (
@@ -260,9 +270,9 @@ function MyBookings() {
               <span className="w-2.5 h-2.5 rounded-full bg-success inline-block"></span> Estado: Concluída
             </p>
           </div>
-          <a 
-            href={gerarLinkGoogleCalendar(bookingObj)} 
-            target="_blank" 
+          <a
+            href={gerarLinkGoogleCalendar(bookingObj)}
+            target="_blank"
             rel="noopener noreferrer"
             onClick={closeToast}
             className="w-full mb-2 bg-indigo-600 hover:bg-indigo-750 text-white font-bold py-2 rounded-lg text-sm transition-colors block text-center shadow-sm flex items-center justify-center gap-2"
@@ -285,10 +295,10 @@ function MyBookings() {
       <div className="flex flex-col text-left">
         <h4 className="font-bold text-gray-800 mb-1 text-base">Gerir Reserva</h4>
         <p className="text-sm text-gray-600 mb-4">O que pretendes fazer com a reserva de <b>{nomeDoRecurso}{extraText}</b>?</p>
-        
-        <a 
-          href={gerarLinkGoogleCalendar(bookingObj)} 
-          target="_blank" 
+
+        <a
+          href={gerarLinkGoogleCalendar(bookingObj)}
+          target="_blank"
           rel="noopener noreferrer"
           onClick={closeToast}
           className="w-full mb-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-lg text-sm transition-colors block text-center shadow-sm flex items-center justify-center gap-2"
@@ -340,7 +350,7 @@ function MyBookings() {
           }
         }
       `}</style>
-      
+
       <Navbar user={user} logout={handleLogout} />
 
       <main className="max-w-5xl mx-auto px-4 py-8 flex-1 w-full">
@@ -355,13 +365,13 @@ function MyBookings() {
         {/* Segmented Control para Alternar Vistas */}
         <div className="flex justify-center mb-6">
           <div className="bg-gray-100 p-1 rounded-xl inline-flex shadow-sm border border-gray-200">
-            <button 
+            <button
               onClick={() => setVistaAtiva('calendario')}
               className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${vistaAtiva === 'calendario' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
             >
               Calendário
             </button>
-            <button 
+            <button
               onClick={() => setVistaAtiva('lista')}
               className={`px-4 py-2 rounded-lg font-bold text-sm flex items-center gap-2 transition-all ${vistaAtiva === 'lista' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-900'}`}
             >
@@ -369,10 +379,19 @@ function MyBookings() {
             </button>
           </div>
         </div>
-        
+
         {erro && <div className="bg-admin-soft text-admin p-4 rounded-lg mb-6">{erro}</div>}
 
-        {vistaAtiva === 'calendario' ? (
+        {/* Ecrã de carregamento ativo se for a primeira carga */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-3 text-gray-500 font-semibold bg-white border border-gray-200 rounded-xl shadow-sm">
+            <svg className="animate-spin h-8 w-8 text-primary" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <span>A carregar as tuas reservas e recursos...</span>
+          </div>
+        ) : vistaAtiva === 'calendario' ? (
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6 overflow-hidden">
             <FullCalendar
               ref={calendarRef}
@@ -382,7 +401,7 @@ function MyBookings() {
               locale="pt"
               headerToolbar={window.innerWidth < 640 ? { left: 'prev,next', center: 'title', right: 'today' } : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,listWeek,timeGridDay' }}
               events={eventosCalendario}
-              eventClick={handleEventClick} 
+              eventClick={handleEventClick}
               height="75vh"
               eventClassNames="cursor-pointer hover:opacity-80 transition-opacity"
               slotEventOverlap={false}
@@ -404,7 +423,7 @@ function MyBookings() {
                   const isCompleted = reserva.status === 'completed';
                   const isCancelled = reserva.status === 'cancelled';
                   const isConfirmed = reserva.status === 'confirmed';
-                  
+
                   const now = new Date();
                   const startTime = new Date(reserva.start_time.replace(' ', 'T'));
                   const endTime = new Date(reserva.end_time.replace(' ', 'T'));
@@ -413,8 +432,8 @@ function MyBookings() {
                   const extraText = reserva.extra ? ` + ${reserva.extra.resource_name}` : '';
 
                   return (
-                    <div 
-                      key={reserva.booking_id} 
+                    <div
+                      key={reserva.booking_id}
                       className={`bg-white border rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between hover:shadow-md ${isCancelled ? 'border-gray-200 opacity-60 bg-gray-50/50' : isCompleted ? 'border-green-200 bg-green-50/10' : 'border-blue-200 bg-blue-50/5'}`}
                     >
                       <div className="text-left">
@@ -437,30 +456,30 @@ function MyBookings() {
                       {isConfirmed && (
                         <div className="space-y-2 border-t border-gray-100 pt-3 text-left">
                           <div className="flex flex-wrap gap-2">
-                            <a 
-                              href={gerarLinkGoogleCalendar(reserva)} 
-                              target="_blank" 
+                            <a
+                              href={gerarLinkGoogleCalendar(reserva)}
+                              target="_blank"
                               rel="noopener noreferrer"
                               className="flex-1 min-w-[120px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
                             >
                               Google Cal
                             </a>
-                            <button 
+                            <button
                               onClick={() => abrirModalEdicao(reserva.booking_id)}
                               className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-lg text-xs transition-colors border border-gray-200"
                             >
                               Editar
                             </button>
-                            <button 
+                            <button
                               onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
                               className="flex-1 bg-admin-soft hover:bg-admin-soft/80 text-admin font-bold py-2 rounded-lg text-xs transition-colors"
                             >
                               Cancelar
                             </button>
                           </div>
-                          
+
                           {isOngoing && (
-                            <button 
+                            <button
                               onClick={() => terminarReservaCedo(reserva.booking_id, reserva.resource_name)}
                               className="w-full bg-success hover:bg-success-hover text-white font-bold py-2 rounded-lg text-xs transition-colors shadow-sm"
                             >
@@ -472,9 +491,9 @@ function MyBookings() {
 
                       {isCompleted && (
                         <div className="border-t border-gray-100 pt-3 flex gap-2 text-left">
-                          <a 
-                            href={gerarLinkGoogleCalendar(reserva)} 
-                            target="_blank" 
+                          <a
+                            href={gerarLinkGoogleCalendar(reserva)}
+                            target="_blank"
                             rel="noopener noreferrer"
                             className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
                           >
