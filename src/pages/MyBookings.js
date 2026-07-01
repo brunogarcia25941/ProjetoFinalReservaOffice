@@ -50,6 +50,9 @@ function MyBookings() {
   const [vistaAtiva, setVistaAtiva] = useState(window.innerWidth < 768 ? 'lista' : 'calendario');
   const calendarRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  // Estado para controlo das sub-vistas e ordenação do histórico na lista
+  const [subVistaAtiva, setSubVistaAtiva] = useState('ativas'); // 'ativas' ou 'historico'
+  const [ordenacaoHistorico, setOrdenacaoHistorico] = useState('desc'); // 'desc' ou 'asc'
 
   // Efeito para ajustar a vista do FullCalendar com base no tamanho do ecrã
   useEffect(() => {
@@ -249,6 +252,21 @@ function MyBookings() {
       extendedProps: { nomeRecurso: r.resource_name, startTime: r.start_time, endTime: r.end_time, status: r.status }
     }));
 
+  // Filtrar e ordenar as reservas ativas (em curso ou futuras) ordenando por data de início mais próxima primeiro
+  const reservasAtivas = reservas
+    .filter(r => r.status === 'confirmed')
+    .sort((a, b) => new Date(a.start_time.replace(' ', 'T')) - new Date(b.start_time.replace(' ', 'T')));
+
+  // Filtrar e ordenar o histórico (concluídas ou canceladas) ordenando por data de fim (com toggle ascendente/descendente)
+  const reservasHistorico = reservas
+    .filter(r => r.status === 'completed' || r.status === 'cancelled')
+    .sort((a, b) => {
+      const dateA = new Date(a.end_time.replace(' ', 'T'));
+      const dateB = new Date(b.end_time.replace(' ', 'T'));
+      return ordenacaoHistorico === 'desc' ? dateB - dateA : dateA - dateB;
+    });
+
+
   const handleEventClick = (clickInfo) => {
     const idReserva = clickInfo.event.id;
     const nomeDoRecurso = clickInfo.event.extendedProps.nomeRecurso;
@@ -410,103 +428,155 @@ function MyBookings() {
             />
           </div>
         ) : (
-          <div className="space-y-4">
-            {reservas.length === 0 ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-10 text-center text-gray-500 shadow-sm">
-                Não tens nenhuma reserva registada no sistema.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {reservas.map(reserva => {
-                  const dataInicio = new Date(reserva.start_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
-                  const dataFim = new Date(reserva.end_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
-                  const isCompleted = reserva.status === 'completed';
-                  const isCancelled = reserva.status === 'cancelled';
-                  const isConfirmed = reserva.status === 'confirmed';
-
-                  const now = new Date();
-                  const startTime = new Date(reserva.start_time.replace(' ', 'T'));
-                  const endTime = new Date(reserva.end_time.replace(' ', 'T'));
-                  const isOngoing = now >= startTime && now < endTime;
-
-                  const extraText = reserva.extra ? ` + ${reserva.extra.resource_name}` : '';
-
-                  return (
-                    <div
-                      key={reserva.booking_id}
-                      className={`bg-white border rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between hover:shadow-md ${isCancelled ? 'border-gray-200 opacity-60 bg-gray-50/50' : isCompleted ? 'border-green-200 bg-green-50/10' : 'border-blue-200 bg-blue-50/5'}`}
+          <div className="space-y-6 animate-fade-in">
+                {/* Seletor de Sub-vistas (Ativas vs Histórico) */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-3 rounded-xl border border-gray-200 shadow-sm">
+                  <div className="flex gap-2 w-full sm:w-auto">
+                    <button
+                      onClick={() => setSubVistaAtiva('ativas')}
+                      className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-bold text-xs transition-all border ${subVistaAtiva === 'ativas' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-gray-700'}`}
                     >
-                      <div className="text-left">
-                        <div className="flex justify-between items-start mb-3 gap-2">
-                          <div>
-                            <span className="font-extrabold text-gray-900 text-lg block">{reserva.resource_name}{extraText}</span>
-                            <span className="text-xs text-gray-400 capitalize font-medium">{reserva.resource_type}</span>
+                      Futuras / Em Curso ({reservasAtivas.length})
+                    </button>
+                    <button
+                      onClick={() => setSubVistaAtiva('historico')}
+                      className={`flex-1 sm:flex-initial px-4 py-2 rounded-lg font-bold text-xs transition-all border ${subVistaAtiva === 'historico' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100 hover:text-gray-700'}`}
+                    >
+                      Histórico ({reservasHistorico.length})
+                    </button>
+                  </div>
+
+                  {subVistaAtiva === 'historico' && reservasHistorico.length > 0 && (
+                    <button
+                      onClick={() => setOrdenacaoHistorico(prev => prev === 'desc' ? 'asc' : 'desc')}
+                      className="w-full sm:w-auto px-4 py-2 rounded-lg font-bold text-xs bg-white text-gray-600 border border-gray-200 hover:bg-gray-50 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                    >
+                      <span>Ordenação: {ordenacaoHistorico === 'desc' ? 'Mais Recente ➔ Antiga' : 'Antiga ➔ Mais Recente'}</span>
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"></path></svg>
+                    </button>
+                  )}
+                </div>
+
+                {/* Listagem de Reservas */}
+                {(subVistaAtiva === 'ativas' ? reservasAtivas : reservasHistorico).length === 0 ? (
+                  <div className="bg-white border border-gray-200 rounded-xl p-12 text-center text-gray-500 shadow-sm animate-fade-in">
+                    {subVistaAtiva === 'ativas'
+                      ? 'Não tens nenhuma reserva ativa ou em curso de momento.'
+                      : 'Não tens nenhuma reserva concluída ou cancelada no histórico.'}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-fade-in">
+                    {(subVistaAtiva === 'ativas' ? reservasAtivas : reservasHistorico).map(reserva => {
+                      const dataInicio = new Date(reserva.start_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+                      const dataFim = new Date(reserva.end_time.replace(' ', 'T')).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+                      const isCompleted = reserva.status === 'completed';
+                      const isCancelled = reserva.status === 'cancelled';
+                      const isConfirmed = reserva.status === 'confirmed';
+
+                      const now = new Date();
+                      const startTime = new Date(reserva.start_time.replace(' ', 'T'));
+                      const endTime = new Date(reserva.end_time.replace(' ', 'T'));
+                      const isOngoing = now >= startTime && now < endTime;
+
+                      const extraText = reserva.extra ? ` + ${reserva.extra.resource_name}` : '';
+
+                      // Estilo visual baseado no estado e se está a decorrer
+                      let cardStyle = "border-gray-200 opacity-70 bg-gray-50/50"; // Padrão cancelada
+                      if (isConfirmed) {
+                        if (isOngoing) {
+                          cardStyle = "border-primary bg-primary-soft/10 ring-2 ring-primary/20 shadow-md";
+                        } else {
+                          cardStyle = "border-blue-200 bg-blue-50/5 hover:border-blue-300";
+                        }
+                      } else if (isCompleted) {
+                        cardStyle = "border-green-200 bg-green-50/10 opacity-90";
+                      }
+
+                      return (
+                        <div
+                          key={reserva.booking_id}
+                          className={`bg-white border rounded-xl p-5 shadow-sm transition-all flex flex-col justify-between hover:shadow-md ${cardStyle}`}
+                        >
+                          <div className="text-left">
+                            <div className="flex justify-between items-start mb-3 gap-2">
+                              <div>
+                                <span className="font-extrabold text-gray-900 text-lg block">{reserva.resource_name}{extraText}</span>
+                                <span className="text-xs text-gray-400 capitalize font-medium">{reserva.resource_type}</span>
+                              </div>
+                              {/* Badge de Estado com destaque para reservas em curso */}
+                              <span className={`px-2.5 py-1 text-xs font-bold rounded-full border whitespace-nowrap ${
+                                isOngoing
+                                  ? 'bg-primary-soft text-primary-hover border-primary-light animate-pulse'
+                                  : isConfirmed
+                                  ? 'bg-blue-50 text-blue-600 border-blue-100'
+                                  : isCompleted
+                                  ? 'bg-success-soft text-success-hover border-success-light'
+                                  : 'bg-gray-100 text-gray-500 border-gray-200'
+                              }`}>
+                                {isOngoing ? 'A Decorrer' : isConfirmed ? 'Confirmada' : isCompleted ? 'Concluída' : 'Cancelada'}
+                              </span>
+                            </div>
+
+                            <div className="space-y-1.5 text-sm text-gray-600 mb-4 bg-gray-50/80 rounded-lg p-3 border border-gray-100">
+                              <p className="flex justify-between"><strong>Início:</strong> <span>{dataInicio}</span></p>
+                              <p className="flex justify-between"><strong>Fim:</strong> <span>{dataFim}</span></p>
+                            </div>
                           </div>
-                          <span className={`px-2.5 py-1 text-xs font-bold rounded-full border whitespace-nowrap ${isConfirmed ? 'bg-blue-50 text-blue-600 border-blue-100' : isCompleted ? 'bg-success-light text-success-hover border-success-light' : 'bg-gray-100 text-gray-500 border-gray-200'}`}>
-                            {isConfirmed ? 'Confirmada' : isCompleted ? 'Concluída' : 'Cancelada'}
-                          </span>
-                        </div>
 
-                        <div className="space-y-1.5 text-sm text-gray-600 mb-4 bg-gray-50/80 rounded-lg p-3 border border-gray-100">
-                          <p className="flex justify-between"><strong>Início:</strong> <span>{dataInicio}</span></p>
-                          <p className="flex justify-between"><strong>Fim:</strong> <span>{dataFim}</span></p>
-                        </div>
-                      </div>
+                          {isConfirmed && (
+                            <div className="space-y-2 border-t border-gray-100 pt-3 text-left">
+                              <div className="flex flex-wrap gap-2">
+                                <a
+                                  href={gerarLinkGoogleCalendar(reserva)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex-1 min-w-[120px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
+                                >
+                                  Google Cal
+                                </a>
+                                <button
+                                  onClick={() => abrirModalEdicao(reserva.booking_id)}
+                                  className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-lg text-xs transition-colors border border-gray-200"
+                                >
+                                  Editar
+                                </button>
+                                <button
+                                  onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
+                                  className="flex-1 bg-admin-soft hover:bg-admin-soft/80 text-admin font-bold py-2 rounded-lg text-xs transition-colors"
+                                >
+                                  Cancelar
+                                </button>
+                              </div>
 
-                      {isConfirmed && (
-                        <div className="space-y-2 border-t border-gray-100 pt-3 text-left">
-                          <div className="flex flex-wrap gap-2">
-                            <a
-                              href={gerarLinkGoogleCalendar(reserva)}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex-1 min-w-[120px] bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
-                            >
-                              Google Cal
-                            </a>
-                            <button
-                              onClick={() => abrirModalEdicao(reserva.booking_id)}
-                              className="flex-1 bg-gray-50 hover:bg-gray-100 text-gray-700 font-bold py-2 rounded-lg text-xs transition-colors border border-gray-200"
-                            >
-                              Editar
-                            </button>
-                            <button
-                              onClick={() => cancelarReserva(reserva.booking_id, reserva.resource_name)}
-                              className="flex-1 bg-admin-soft hover:bg-admin-soft/80 text-admin font-bold py-2 rounded-lg text-xs transition-colors"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
+                              {isOngoing && (
+                                <button
+                                  onClick={() => terminarReservaCedo(reserva.booking_id, reserva.resource_name)}
+                                  className="w-full bg-success hover:bg-success-hover text-white font-bold py-2 rounded-lg text-xs transition-colors shadow-sm"
+                                >
+                                  Concluir / Libertar Agora
+                                </button>
+                              )}
+                            </div>
+                          )}
 
-                          {isOngoing && (
-                            <button
-                              onClick={() => terminarReservaCedo(reserva.booking_id, reserva.resource_name)}
-                              className="w-full bg-success hover:bg-success-hover text-white font-bold py-2 rounded-lg text-xs transition-colors shadow-sm"
-                            >
-                              Concluir / Libertar Agora
-                            </button>
+                          {isCompleted && (
+                            <div className="border-t border-gray-100 pt-3 flex gap-2 text-left">
+                              <a
+                                href={gerarLinkGoogleCalendar(reserva)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
+                              >
+                                Adicionar ao Google Calendar
+                              </a>
+                            </div>
                           )}
                         </div>
-                      )}
-
-                      {isCompleted && (
-                        <div className="border-t border-gray-100 pt-3 flex gap-2 text-left">
-                          <a
-                            href={gerarLinkGoogleCalendar(reserva)}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 rounded-lg text-xs transition-colors text-center block flex items-center justify-center gap-1 border border-indigo-100"
-                          >
-                            Adicionar ao Google Calendar
-                          </a>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
         )}
       </main>
 

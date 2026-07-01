@@ -50,9 +50,10 @@ function TicketsDashboard() {
 
   const isTechOrAdmin = user?.role === 'tecnico' || user?.role === 'admin';
 
-  const carregarTickets = useCallback(async () => {
+  // Função para carregar os tickets com opção de loading silencioso
+  const carregarTickets = useCallback(async (mostrarLoading = false) => {
     if (!token) return;
-    setIsLoading(true);
+    if (mostrarLoading) setIsLoading(true); // Só mostra o loading visual se solicitado
     try {
       const response = await api.get('/tickets');
       setTickets(response.data);
@@ -74,10 +75,10 @@ function TicketsDashboard() {
   }, [token]);
 
   useEffect(() => {
-    carregarTickets();
+    carregarTickets(true);
     carregarRecursos();
     const interval = setInterval(() => {
-      carregarTickets();
+      carregarTickets(false);
       carregarRecursos();
     }, 10000);
     return () => clearInterval(interval);

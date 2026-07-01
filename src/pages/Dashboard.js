@@ -100,9 +100,10 @@ function Dashboard() {
   const minFim = new Date(dataFim).getMinutes();
   const isForaDeHoras = horaInicio < 9 || horaFim > 18 || (horaFim === 18 && minFim > 0);
 
-  const carregarRecursosComDisponibilidade = useCallback(async () => {
+  // Função para carregar recursos com opção de loading silencioso para atualizações automáticas
+  const carregarRecursosComDisponibilidade = useCallback(async (mostrarLoading = false) => {
     if (!token || !dataInicio || !dataFim) return;
-    setIsLoading(true);
+    if (mostrarLoading) setIsLoading(true); // Apenas ativa o loading se for explicitamente solicitado
     setErro(null);
     const startTimeFormatado = formatMySQLDate(dataInicio);
     const endTimeFormatado = formatMySQLDate(dataFim);
@@ -126,9 +127,9 @@ function Dashboard() {
   }, [token, dataInicio, dataFim, isForaDeHoras]);
 
   useEffect(() => {
-    carregarRecursosComDisponibilidade();
+    carregarRecursosComDisponibilidade(true);
     const interval = setInterval(() => {
-      carregarRecursosComDisponibilidade();
+      carregarRecursosComDisponibilidade(false);
     }, 10000);
     return () => clearInterval(interval);
   }, [carregarRecursosComDisponibilidade]);
