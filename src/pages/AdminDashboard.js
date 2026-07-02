@@ -160,28 +160,59 @@ function AdminDashboard() {
     }
   };
 
-  const handleEliminarRecurso = async (id, nome) => {
-    const efetuarEliminacao = async () => {
-      try {
-        await api.delete(`/resources/${id}`);
-        toast.info("Recurso removido.");
-        queryClient.invalidateQueries({ queryKey: ['recursos'] });
-      } catch (error) {
-        toast.error("Erro ao eliminar recurso.");
-      }
-    };
+      const handleEliminarRecurso = async (id, nome) => {
+        // Filtrar as reservas ativas (confirmadas e que ainda decorrem ou vão decorrer) associadas a este recurso
+        const reservasAtivas = todasReservas.filter(
+          reserva =>
+            reserva.resource_name === nome &&
+            reserva.status === 'confirmed' &&
+            new Date(reserva.end_time) >= new Date()
+        );
 
-    toast(({ closeToast }) => (
-      <div className="flex flex-col">
-        <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
-        <p className="text-sm text-gray-600 mb-4">Tens a certeza que queres eliminar <b>{nome}</b>?</p>
-        <div className="flex gap-2">
-          <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-admin hover:bg-admin-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors">Eliminar</button>
-          <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors">Cancelar</button>
-        </div>
-      </div>
-    ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
-  };
+        const efetuarEliminacao = async () => {
+          try {
+            await api.delete(`/resources/${id}`);
+            toast.info("Recurso removido.");
+            queryClient.invalidateQueries({ queryKey: ['recursos'] });
+            queryClient.invalidateQueries({ queryKey: ['reservas'] }); // Atualizar lista de reservas após a remoção
+          } catch (error) {
+            toast.error("Erro ao eliminar recurso.");
+          }
+        };
+
+        toast(({ closeToast }) => (
+          <div className="flex flex-col text-left">
+            <h4 className="font-bold text-gray-800 mb-1 text-base">Eliminar Recurso</h4>
+            <p className="text-sm text-gray-600 mb-2">Tens a certeza que queres eliminar <b>{nome}</b>?</p>
+
+            {/* Bloco de aviso a amarelo se existirem reservas ativas ou futuras */}
+            {reservasAtivas.length > 0 && (
+              <div className="mt-2 mb-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-xs text-yellow-800 space-y-1.5 max-h-36 overflow-y-auto">
+                <div className="font-bold flex items-center gap-1.5 text-yellow-700">
+                  <span className="text-sm">⚠️</span>
+                  <span>Aviso: Existem reservas ativas ou futuras!</span>
+                </div>
+                <ul className="list-disc pl-4 space-y-1">
+                  {reservasAtivas.map(res => {
+                    const inicio = new Date(res.start_time).toLocaleString('pt-PT', { dateStyle: 'short', timeStyle: 'short' });
+                    const fim = new Date(res.end_time).toLocaleString('pt-PT', { timeStyle: 'short' });
+                    return (
+                      <li key={res.booking_id}>
+                        {inicio} - {fim} (Por: <b>{res.user_name}</b>)
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex gap-2 mt-2">
+              <button onClick={() => { efetuarEliminacao(); closeToast(); }} className="flex-1 bg-admin hover:bg-admin-hover text-white font-bold py-2 px-3 rounded-lg text-sm transition-colors cursor-pointer">Eliminar</button>
+              <button onClick={closeToast} className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 font-bold py-2 px-3 rounded-lg text-sm transition-colors cursor-pointer">Cancelar</button>
+            </div>
+          </div>
+        ), { autoClose: false, closeOnClick: false, draggable: false, position: "top-center", theme: "light" });
+      };
 
   const handleActualizarRecurso = async (e) => {
     e.preventDefault();

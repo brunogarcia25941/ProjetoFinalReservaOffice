@@ -397,7 +397,8 @@ function Dashboard() {
   };
 
   const recursosFiltrados = recursosDoOffice.filter((r) => {
-    const passaPiso = pisoFiltro === '' || String(r.floor) === String(pisoFiltro);
+    const pisoAtivo = vista === 'mapa' && pisoFiltro === '' ? String(pisosDisponiveis[0] || 1) : pisoFiltro;
+    const passaPiso = pisoAtivo === '' || String(r.floor) === String(pisoAtivo);
     const isMaintenance = r.status === 'maintenance';
     const isAlreadyBooked = r.is_booked === 1;
     const isAvailable = !isMaintenance && !isAlreadyBooked;
